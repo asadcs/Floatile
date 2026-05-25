@@ -54,21 +54,24 @@ Do not make any changes until you have 95% confidence in what needs to be built.
 | Sprint | Status |
 |--------|--------|
 | 0 — Visual Prototype | ✅ COMPLETE |
-| 1 — Core Mechanic | ⚠️ CODE COMPLETE — pending play test |
-| 2 — Game Feel | 🔲 bg_music.mp3 already done |
+| 1 — Core Mechanic | ✅ COMPLETE |
+| 2 — Visual Polish | ✅ COMPLETE |
 | 3 — CrazyGames SDK | 🔲 |
 | 4 — Multi-Platform | 🔲 |
 
-## Sprint 1 — Code is on GitHub (do NOT rewrite)
+## Sprint 2 — What Changed (fixed-screen arena + Cube2048 polish)
 
-All Sprint 1 scripts exist in `Assets/Scripts/`. Pull and run setup:
+- **Arena**: fixed camera at (0,0,-10), 25×14 world units (no scrolling)
+- **NPCDrift**: left-to-right only, WANDER=1.5f, interior scatter on start, edge respawn
+- **ArenaSpawner**: 7 NPC target, special tiles rare (every 60–105s), proportional tier distribution
+- **TileVisual**: 0.25 world-unit base scale, integer labels (4K not 4.1K)
+- **TierColorTable**: 31 explicit Cube2048 hex colors indexed by log2(tier)
+- **PlayerDrift**: updated arena bounds to match fixed-screen
+- **CameraFollow**: fixed (no longer follows player — camera is static)
 
-1. `git pull` in `C:\Dev\Floatile\`
-2. Open Unity — wait for recompile
+## To run on a new machine
+
+1. `git clone https://github.com/asadcs/Floatile.git C:\Dev\Floatile`
+2. Open in Unity Hub — version **6000.4.7f1** required
 3. Menu → **Floatile → Setup Sprint 1 Scene (Full Reset)**
 4. Press Play
-
-Scripts already written: `TierColorTable`, `GameManager`, `PlayerProgression`,
-`EatSystem`, `NPCDrift`, `SpecialTile`, `ArenaSpawner`, `UIManager`
-Modified: `TileVisual` (SetTier), `PlayerDrift` (isTrigger=true, ExternalInput)
-Prefabs: `NPC_Drift.prefab`, `SpecialTile.prefab`
