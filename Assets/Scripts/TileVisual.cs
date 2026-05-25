@@ -11,13 +11,13 @@ public sealed class TileVisual : MonoBehaviour
     [Tooltip("Growth per tier within a bracket. 1.03=subtle  1.05=default  1.08=noticeable")]
     [SerializeField] private float   innerFactor = 1.05f;
     [Tooltip("Start size for each bracket: [units 2-512, K, M, B, T]")]
-    [SerializeField] private float[] rangeBases  = { 0.50f, 0.85f, 1.50f, 2.60f, 3.00f };
+    [SerializeField] private float[] rangeBases  = { 0.25f, 0.43f, 0.75f, 1.30f, 1.50f };
     [Tooltip("Hard size cap in world units")]
-    [SerializeField] private float   sizeMax     = 3.0f;
+    [SerializeField] private float   sizeMax     = 1.50f;
 
     public static float   InnerFactor = 1.05f;
-    public static float[] RangeBases  = { 0.50f, 0.85f, 1.50f, 2.60f, 3.00f };
-    public static float   SizeMax     = 3.0f;
+    public static float[] RangeBases  = { 0.25f, 0.43f, 0.75f, 1.30f, 1.50f };
+    public static float   SizeMax     = 1.50f;
 
     private SpriteRenderer spriteRenderer;
     private TextMesh       label;
