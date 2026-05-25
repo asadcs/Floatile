@@ -4,6 +4,9 @@ public sealed class PlayerDrift : MonoBehaviour
 {
     [SerializeField] private float speed = 20f;
 
+    // Set by UIManager D-pad buttons; accumulated while buttons are held
+    public Vector2 ExternalInput { get; set; }
+
     private const float MIN_X = -40f;
     private const float MAX_X =  40f;
     private const float MIN_Y =   0f;
@@ -23,9 +26,9 @@ public sealed class PlayerDrift : MonoBehaviour
         rb.gravityScale = 0f;
         rb.constraints = RigidbodyConstraints2D.FreezeRotation;
 
-        // Solid collider so NPCs bounce off the player
+        // Trigger so OnTriggerEnter2D fires for eat/evolve/penalty
         var col = GetComponent<BoxCollider2D>();
-        if (col != null) col.isTrigger = false;
+        if (col != null) col.isTrigger = true;
 
         Debug.Log($"[PlayerDrift.Awake] kinematic RB ready. isTrigger={col?.isTrigger}");
     }
@@ -41,6 +44,8 @@ public sealed class PlayerDrift : MonoBehaviour
         Vector2 dir = KeyboardDir();
         if (dir.sqrMagnitude < 0.01f)
             dir = MouseDir();
+        if (dir.sqrMagnitude < 0.01f)
+            dir = ExternalInput.normalized;
 
         if (dir.sqrMagnitude > 0.01f)
         {

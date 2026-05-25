@@ -22,6 +22,189 @@ public static class FloatileSceneSetup
         new Color(0.94f, 0.57f, 0.23f), // tier 32 #F0923A
     };
 
+    // ── Sprint 1 Setup ────────────────────────────────────────────────────────
+
+    const string SCENE_PATH = "Assets/Scenes/SampleScene.unity";
+
+    [MenuItem("Floatile/Setup Sprint 1 Scene (Full Reset)")]
+    public static void SetupSprint1()
+    {
+        // Explicitly open the target scene so saves always hit the right file
+        var scene = EditorSceneManager.OpenScene(SCENE_PATH, OpenSceneMode.Single);
+
+        Sprite tileSprite = LoadTileSprite();
+        Sprite bgSprite   = LoadBgSprite();
+
+        SetupCamera();
+        ClearSprint1Objects();
+        CreateBackground(bgSprite);
+        SetupBloom();
+        CreateMusic();
+        CreateWalls();
+        CreateGameManager();
+        GameObject player        = CreatePlayerSprint1(tileSprite);
+        GameObject npcPrefab     = CreateNpcDriftPrefab(tileSprite);
+        GameObject specialPrefab = CreateSpecialTilePrefab(tileSprite);
+        CreateArenaSpawnerSprint1(npcPrefab, specialPrefab, tileSprite);
+        CreateUIManager(player);
+        WireCameraFollow(player);
+
+        if (Camera.main != null) EditorUtility.SetDirty(Camera.main.gameObject);
+
+        // Explicit save by path — reliable in both interactive and batch contexts
+        EditorSceneManager.MarkSceneDirty(scene);
+        bool saved = EditorSceneManager.SaveScene(scene, SCENE_PATH);
+        Debug.Log(saved
+            ? "Floatile Sprint 1 scene configured and saved. Press Play."
+            : "WARNING: Scene save returned false — save manually via File → Save.");
+        Selection.activeGameObject = player;
+    }
+
+    static void ClearSprint1Objects()
+    {
+        string[] names = { "Wall_Left","Wall_Right","Wall_Bottom","Wall_Top",
+                           "Player","NPC_Prefab","ArenaSpawner",
+                           "ArenaBackground","GlobalVolume","MusicManager",
+                           "GameManager","UIManager" };
+        foreach (string n in names)
+        {
+            GameObject old = GameObject.Find(n);
+            if (old != null) Object.DestroyImmediate(old);
+        }
+    }
+
+    static void CreateGameManager()
+    {
+        GameObject go = new("GameManager");
+        go.AddComponent<GameManager>();
+        EditorUtility.SetDirty(go);
+    }
+
+    static GameObject CreatePlayerSprint1(Sprite sprite)
+    {
+        GameObject p = new("Player");
+        p.tag = "Player";
+        p.transform.position = new Vector3(0f, 30f, 0f);
+
+        var sr          = p.AddComponent<SpriteRenderer>();
+        sr.sprite       = sprite;
+        sr.color        = TierColorTable.ForTier(2);
+        sr.sortingOrder = 1;
+
+        var rb          = p.AddComponent<Rigidbody2D>();
+        rb.bodyType     = RigidbodyType2D.Kinematic;
+        rb.gravityScale = 0f;
+        rb.constraints  = RigidbodyConstraints2D.FreezeRotation;
+
+        var col         = p.AddComponent<BoxCollider2D>();
+        col.size        = Vector2.one * 0.9f;
+        col.isTrigger   = true;
+
+        var tv = p.AddComponent<TileVisual>();
+        SetTileVisual(tv, sprite, TierColorTable.ForTier(2), "2");
+        p.transform.localScale = Vector3.one * TileVisual.TierScale(2);
+
+        p.AddComponent<PlayerDrift>();
+        p.AddComponent<PlayerProgression>();
+        p.AddComponent<EatSystem>();
+
+        EditorUtility.SetDirty(p);
+        Debug.Log($"[Sprint1 Setup] Player created — isTrigger=true, PlayerProgression+EatSystem added.");
+        return p;
+    }
+
+    static GameObject CreateNpcDriftPrefab(Sprite sprite)
+    {
+        string prefabPath = "Assets/Prefabs/NPC_Drift.prefab";
+        if (!Directory.Exists(Application.dataPath + "/Prefabs"))
+            Directory.CreateDirectory(Application.dataPath + "/Prefabs");
+
+        GameObject npc = new("NPC_Drift");
+
+        var sr = npc.AddComponent<SpriteRenderer>();
+        sr.sprite = sprite;
+        sr.color  = TierColorTable.ForTier(2);
+        sr.sortingOrder = 1;
+
+        var rb = npc.AddComponent<Rigidbody2D>();
+        rb.gravityScale = 0f;
+        rb.constraints  = RigidbodyConstraints2D.FreezeRotation;
+
+        var col  = npc.AddComponent<BoxCollider2D>();
+        col.size = Vector2.one * 0.9f;
+        col.isTrigger = false;
+
+        npc.AddComponent<TileVisual>();
+        npc.AddComponent<NPCDrift>();
+
+        AssetDatabase.DeleteAsset(prefabPath);
+        GameObject prefabAsset = PrefabUtility.SaveAsPrefabAsset(npc, prefabPath);
+        Object.DestroyImmediate(npc);
+        AssetDatabase.Refresh();
+        Debug.Log("NPC_Drift prefab saved: " + prefabPath);
+        return prefabAsset;
+    }
+
+    static GameObject CreateSpecialTilePrefab(Sprite sprite)
+    {
+        string prefabPath = "Assets/Prefabs/SpecialTile.prefab";
+
+        GameObject st = new("SpecialTile");
+
+        var sr = st.AddComponent<SpriteRenderer>();
+        sr.sprite = sprite;
+        sr.sortingOrder = 2;
+
+        st.AddComponent<Rigidbody2D>();
+        var col = st.AddComponent<BoxCollider2D>();
+        col.size      = Vector2.one * 0.9f;
+        col.isTrigger = true;
+
+        st.AddComponent<TileVisual>();
+        st.AddComponent<SpecialTile>();
+
+        AssetDatabase.DeleteAsset(prefabPath);
+        GameObject prefabAsset = PrefabUtility.SaveAsPrefabAsset(st, prefabPath);
+        Object.DestroyImmediate(st);
+        AssetDatabase.Refresh();
+        Debug.Log("SpecialTile prefab saved: " + prefabPath);
+        return prefabAsset;
+    }
+
+    static void CreateArenaSpawnerSprint1(GameObject npcPrefab, GameObject specialPrefab, Sprite sprite)
+    {
+        GameObject go = new("ArenaSpawner");
+        var spawner = go.AddComponent<ArenaSpawner>();
+
+        SerializedObject so = new(spawner);
+        so.FindProperty("npcPrefab").objectReferenceValue      = npcPrefab;
+        so.FindProperty("specialTilePrefab").objectReferenceValue = specialPrefab;
+        so.FindProperty("tileSprite").objectReferenceValue     = sprite;
+        so.ApplyModifiedPropertiesWithoutUndo();
+
+        EditorUtility.SetDirty(spawner);
+    }
+
+    static void CreateUIManager(GameObject player)
+    {
+        GameObject go = new("UIManager");
+        var ui = go.AddComponent<UIManager>();
+
+        var prog  = player.GetComponent<PlayerProgression>();
+        var drift = player.GetComponent<PlayerDrift>();
+
+        SerializedObject so = new(ui);
+        so.FindProperty("playerProg").objectReferenceValue      = prog;
+        so.FindProperty("playerDrift").objectReferenceValue     = drift;
+        so.FindProperty("playerTransform").objectReferenceValue = player.transform;
+        so.FindProperty("mainCam").objectReferenceValue         = Camera.main;
+        so.ApplyModifiedPropertiesWithoutUndo();
+
+        EditorUtility.SetDirty(go);
+    }
+
+    // ── Sprint 0 Setup ────────────────────────────────────────────────────────
+
     [MenuItem("Floatile/Setup Sprint 0 Scene (Full Reset)")]
     public static void SetupScene()
     {
@@ -65,7 +248,15 @@ public static class FloatileSceneSetup
     static void SetupCamera()
     {
         Camera cam = Camera.main;
-        if (cam == null) { Debug.LogError("No Main Camera found."); return; }
+        if (cam == null)
+        {
+            // Create a Main Camera if the scene doesn't have one
+            GameObject camGo = new("Main Camera");
+            camGo.tag = "MainCamera";
+            cam = camGo.AddComponent<Camera>();
+            camGo.AddComponent<AudioListener>();
+            Debug.Log("[Setup] No Main Camera found — created one.");
+        }
 
         cam.orthographic     = true;
         cam.orthographicSize = 7f;

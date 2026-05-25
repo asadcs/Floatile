@@ -130,6 +130,21 @@ public sealed class TileVisual : MonoBehaviour
     public void ApplyTierScale(long tier) =>
         transform.localScale = Vector3.one * TierScale(tier);
 
+    // Full tier update: color + label + scale in one call
+    public void SetTier(long tier)
+    {
+        Color  col   = TierColorTable.ForTier(tier);
+        string text  = FormatNumber(tier);
+        tierLabel    = text;
+        tileColor    = col;
+
+        if (spriteRenderer == null) spriteRenderer = GetComponent<SpriteRenderer>();
+        EnsureLabels();
+        ConfigureSprite();
+        ConfigureLabels();
+        transform.localScale = Vector3.one * TierScale(tier);
+    }
+
     // ── Number formatting ─────────────────────────────────────────────────────
 
     public static string FormatNumber(long value)
