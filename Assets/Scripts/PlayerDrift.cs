@@ -7,10 +7,6 @@ public sealed class PlayerDrift : MonoBehaviour
     // Set by UIManager D-pad buttons; accumulated while buttons are held
     public Vector2 ExternalInput { get; set; }
 
-    private const float MIN_X = -12f;
-    private const float MAX_X =  12f;
-    private const float MIN_Y =  -6.5f;
-    private const float MAX_Y =   6.5f;
 
     private Rigidbody2D rb;
     private Camera      mainCam;
@@ -50,8 +46,8 @@ public sealed class PlayerDrift : MonoBehaviour
         if (dir.sqrMagnitude > 0.01f)
         {
             Vector2 next = rb.position + dir.normalized * speed * Time.fixedDeltaTime;
-            next.x = Mathf.Clamp(next.x, MIN_X, MAX_X);
-            next.y = Mathf.Clamp(next.y, MIN_Y, MAX_Y);
+            next.x = Mathf.Clamp(next.x, ArenaState.MinX, ArenaState.MaxX);
+            next.y = Mathf.Clamp(next.y, ArenaState.MinY, ArenaState.MaxY);
             rb.MovePosition(next);
         }
     }
