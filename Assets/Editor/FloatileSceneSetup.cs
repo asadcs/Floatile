@@ -387,19 +387,21 @@ public static class FloatileSceneSetup
 
     static void CreateWalls()
     {
-        MakeWall("Wall_Left",   new Vector3(-12.5f,  0f, 0f), new Vector2(0.1f, 14f));
-        MakeWall("Wall_Right",  new Vector3( 12.5f,  0f, 0f), new Vector2(0.1f, 14f));
-        MakeWall("Wall_Bottom", new Vector3(  0f,   -7f, 0f), new Vector2(25f,  0.1f));
-        MakeWall("Wall_Top",    new Vector3(  0f,    7f, 0f), new Vector2(25f,  0.1f));
+        MakeWall("Wall_Left",   new Vector3(-12.5f,  0f, 0f), new Vector2(0.1f, 14f), DynamicWall.Side.Left);
+        MakeWall("Wall_Right",  new Vector3( 12.5f,  0f, 0f), new Vector2(0.1f, 14f), DynamicWall.Side.Right);
+        MakeWall("Wall_Bottom", new Vector3(  0f,   -7f, 0f), new Vector2(25f,  0.1f), DynamicWall.Side.Bottom);
+        MakeWall("Wall_Top",    new Vector3(  0f,    7f, 0f), new Vector2(25f,  0.1f), DynamicWall.Side.Top);
     }
 
-    static void MakeWall(string name, Vector3 pos, Vector2 size)
+    static void MakeWall(string name, Vector3 pos, Vector2 size, DynamicWall.Side side)
     {
         GameObject w = new(name);
         w.transform.position = pos;
         var col = w.AddComponent<BoxCollider2D>();
         col.size = size;
         col.isTrigger = true;
+        var dw = w.AddComponent<DynamicWall>();
+        dw.side = side;
     }
 
     // ── Player ────────────────────────────────────────────────────────────────

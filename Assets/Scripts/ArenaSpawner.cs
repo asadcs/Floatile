@@ -76,19 +76,19 @@ public sealed class ArenaSpawner : MonoBehaviour
         npcs.Add(obj);
     }
 
-    // Gaussian distribution in P-space centered on player tier.
-    // Samples candidate tiers from P_player-4 to P_player+3.
+    // Absolute availability: tier 2 always most common, each step × exp(-AvailabilityDecay) rarer.
+    // Samples from P=1 up to P_player+2 so small tiles always exist alongside bigger ones.
     long PickSpawnTier()
     {
-        long player  = playerProg != null ? playerProg.CurrentTier : 2L;
-        int  pPlayer = Mathf.RoundToInt(TileProgression.P(player));
+        long player = playerProg != null ? playerProg.CurrentTier : 2L;
+        int  maxP   = Mathf.Max(4, Mathf.RoundToInt(TileProgression.P(player)) + 2);
 
-        var candidates = new List<(long tier, float w)>(8);
-        for (int delta = -4; delta <= 3; delta++)
+        var candidates = new List<(long tier, float w)>(maxP);
+        for (int p = 1; p <= maxP; p++)
         {
-            int  targetP = Mathf.Max(1, pPlayer + delta);
-            long tier    = 1L << targetP;
-            candidates.Add((tier, TileProgression.SpawnWeight(tier, player)));
+            long  t = 1L << p;
+            float w = Mathf.Exp(-TileProgression.AvailabilityDecay * p);
+            candidates.Add((t, w));
         }
 
         float total = 0f;

@@ -7,7 +7,8 @@ public static class TileProgression
     public static float SizeMax             = 1.50f;
     public static float SizePivot           = 12f;   // P where physical size is at midpoint
 
-    public static float SpawnDecay          = 0.50f; // Gaussian spread in P-space around player
+    public static float AvailabilityDecay   = 0.25f; // absolute decay per P-unit; tier2=0.78, tier1K=0.08
+    public static float SpawnDecay          = 0.50f; // kept for reference; PickSpawnTier uses AvailabilityDecay
 
     public static float SpeedBase           = 0.50f;
     public static float SpeedRange          = 2.00f;
