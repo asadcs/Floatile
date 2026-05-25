@@ -53,13 +53,22 @@ Do not make any changes until you have 95% confidence in what needs to be built.
 
 | Sprint | Status |
 |--------|--------|
-| 0 — Visual Prototype | ✅ COMPLETE (committed to GitHub) |
-| 1 — Core Mechanic | 🔲 3 prereqs needed first (see plan) |
+| 0 — Visual Prototype | ✅ COMPLETE |
+| 1 — Core Mechanic | ⚠️ CODE COMPLETE — pending play test |
 | 2 — Game Feel | 🔲 bg_music.mp3 already done |
 | 3 — CrazyGames SDK | 🔲 |
 | 4 — Multi-Platform | 🔲 |
 
-Sprint 1 prereqs (manual in Unity):
-1. Import Nunito Bold → TMP Font Asset Creator
-2. Flip player BoxCollider2D `isTrigger = true`
-3. Confirm Physics2D gravity = (0, 0)
+## Sprint 1 — Code is on GitHub (do NOT rewrite)
+
+All Sprint 1 scripts exist in `Assets/Scripts/`. Pull and run setup:
+
+1. `git pull` in `C:\Dev\Floatile\`
+2. Open Unity — wait for recompile
+3. Menu → **Floatile → Setup Sprint 1 Scene (Full Reset)**
+4. Press Play
+
+Scripts already written: `TierColorTable`, `GameManager`, `PlayerProgression`,
+`EatSystem`, `NPCDrift`, `SpecialTile`, `ArenaSpawner`, `UIManager`
+Modified: `TileVisual` (SetTier), `PlayerDrift` (isTrigger=true, ExternalInput)
+Prefabs: `NPC_Drift.prefab`, `SpecialTile.prefab`
