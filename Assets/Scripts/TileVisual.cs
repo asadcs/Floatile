@@ -7,6 +7,13 @@ public sealed class TileVisual : MonoBehaviour
     [SerializeField] private Color  tileColor  = new Color(0f, 0f, 0f, 0f);
     [SerializeField] private string tierLabel  = "2";
 
+    // Tweak this on the Player tile in the Inspector — affects all tiles globally.
+    // 1.10 = very subtle, 1.15 = mild, 1.22 = noticeable, 1.30 = aggressive
+    [SerializeField] private float growthFactor = 1.22f;
+
+    // Shared across all instances — set from whichever TileVisual runs Awake first (the player)
+    public static float GrowthFactor = 1.22f;
+
     private SpriteRenderer spriteRenderer;
     private TextMesh       label;
     private TextMesh       labelShadow;
@@ -17,6 +24,7 @@ public sealed class TileVisual : MonoBehaviour
 
     private void Awake()
     {
+        GrowthFactor   = growthFactor;
         spriteRenderer = GetComponent<SpriteRenderer>();
         EnsureLabels();
         ConfigureSprite();
@@ -125,7 +133,7 @@ public sealed class TileVisual : MonoBehaviour
     // ── Tier scaling ──────────────────────────────────────────────────────────
 
     public static float TierScale(long tier) =>
-        Mathf.Clamp(0.5f * Mathf.Pow(1.22f, Mathf.Log(tier, 2f)), 0.5f, 2.5f);
+        Mathf.Clamp(0.5f * Mathf.Pow(GrowthFactor, Mathf.Log(tier, 2f)), 0.5f, 2.5f);
 
     public void ApplyTierScale(long tier) =>
         transform.localScale = Vector3.one * TierScale(tier);
