@@ -4,6 +4,7 @@ using System;
 public sealed class PlayerProgression : MonoBehaviour
 {
     public long Tier { get; private set; } = 2;
+    public long CurrentTier => Tier;
 
     // Points accumulated toward the next tier-up
     long accumulatedPoints;

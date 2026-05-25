@@ -17,29 +17,29 @@ public sealed class NPCDrift : MonoBehaviour
         }
     }
 
-    const float MIN_Y  =  0f;
-    const float MAX_Y  = 60f;
-    const float MAX_X  = 40f;
-    const float WANDER = 0.3f;   // max vertical drift per second
+    const float MIN_Y      = -7f;
+    const float MAX_Y      =  7f;
+    const float EXIT_RIGHT =  13f;
+    const float WANDER     =  1.5f;  // vertical drift per second
 
-    Rigidbody2D   rb;
-    TileVisual    visual;
-    Transform     playerTransform;
-    float         baseSpeed;
-    float         vertDir;
-    float         wanderTimer;
+    Rigidbody2D rb;
+    TileVisual  visual;
+    Transform   playerTransform;
+    float       baseSpeed;
+    float       vertDir;
+    float       wanderTimer;
 
     void Awake()
     {
         rb     = GetComponent<Rigidbody2D>();
         visual = GetComponent<TileVisual>();
 
-        rb.bodyType    = RigidbodyType2D.Dynamic;
+        rb.bodyType     = RigidbodyType2D.Dynamic;
         rb.gravityScale = 0f;
-        rb.constraints = RigidbodyConstraints2D.FreezeRotation;
+        rb.constraints  = RigidbodyConstraints2D.FreezeRotation;
 
-        vertDir      = Random.Range(-1f, 1f);
-        wanderTimer  = Random.Range(1.5f, 4f);
+        vertDir     = Random.Range(-1f, 1f);
+        wanderTimer = Random.Range(1.5f, 4f);
 
         visual.SetTier(tier);
         ApplySpeed();
@@ -53,8 +53,7 @@ public sealed class NPCDrift : MonoBehaviour
 
     void FixedUpdate()
     {
-        // Destroy when tile exits the right edge — ArenaSpawner will respawn
-        if (rb.position.x > MAX_X + 3f)
+        if (rb.position.x > EXIT_RIGHT)
         {
             Destroy(gameObject);
             return;
@@ -87,7 +86,6 @@ public sealed class NPCDrift : MonoBehaviour
 
         rb.linearVelocity = vel;
 
-        // Periodically change vertical wander direction
         wanderTimer -= Time.fixedDeltaTime;
         if (wanderTimer <= 0f)
         {

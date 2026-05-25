@@ -26,6 +26,9 @@ public static class FloatileSceneSetup
 
     const string SCENE_PATH = "Assets/Scenes/SampleScene.unity";
 
+    [MenuItem("Floatile/Setup Sprint 2 Scene (Full Reset)")]
+    public static void SetupSprint2() => SetupSprint1();
+
     [MenuItem("Floatile/Setup Sprint 1 Scene (Full Reset)")]
     public static void SetupSprint1()
     {
@@ -47,7 +50,6 @@ public static class FloatileSceneSetup
         GameObject specialPrefab = CreateSpecialTilePrefab(tileSprite);
         CreateArenaSpawnerSprint1(npcPrefab, specialPrefab, tileSprite);
         CreateUIManager(player);
-        WireCameraFollow(player);
 
         if (Camera.main != null) EditorUtility.SetDirty(Camera.main.gameObject);
 
@@ -55,7 +57,7 @@ public static class FloatileSceneSetup
         EditorSceneManager.MarkSceneDirty(scene);
         bool saved = EditorSceneManager.SaveScene(scene, SCENE_PATH);
         Debug.Log(saved
-            ? "Floatile Sprint 1 scene configured and saved. Press Play."
+            ? "Floatile Sprint 2 fixed-screen scene configured and saved. Press Play."
             : "WARNING: Scene save returned false — save manually via File → Save.");
         Selection.activeGameObject = player;
     }
@@ -84,21 +86,22 @@ public static class FloatileSceneSetup
     {
         GameObject p = new("Player");
         p.tag = "Player";
-        p.transform.position = new Vector3(0f, 30f, 0f);
+        p.transform.position = Vector3.zero;
 
         var sr          = p.AddComponent<SpriteRenderer>();
         sr.sprite       = sprite;
         sr.color        = TierColorTable.ForTier(2);
         sr.sortingOrder = 1;
 
-        var rb          = p.AddComponent<Rigidbody2D>();
-        rb.bodyType     = RigidbodyType2D.Kinematic;
-        rb.gravityScale = 0f;
-        rb.constraints  = RigidbodyConstraints2D.FreezeRotation;
+        var rb                      = p.AddComponent<Rigidbody2D>();
+        rb.bodyType                 = RigidbodyType2D.Kinematic;
+        rb.gravityScale             = 0f;
+        rb.constraints              = RigidbodyConstraints2D.FreezeRotation;
+        rb.useFullKinematicContacts = true;
 
-        var col         = p.AddComponent<BoxCollider2D>();
-        col.size        = Vector2.one * 0.9f;
-        col.isTrigger   = true;
+        var col       = p.AddComponent<BoxCollider2D>();
+        col.size      = Vector2.one;
+        col.isTrigger = true;
 
         var tv = p.AddComponent<TileVisual>();
         SetTileVisual(tv, sprite, TierColorTable.ForTier(2), "2");
@@ -130,8 +133,8 @@ public static class FloatileSceneSetup
         rb.gravityScale = 0f;
         rb.constraints  = RigidbodyConstraints2D.FreezeRotation;
 
-        var col  = npc.AddComponent<BoxCollider2D>();
-        col.size = Vector2.one * 0.9f;
+        var col       = npc.AddComponent<BoxCollider2D>();
+        col.size      = Vector2.one;
         col.isTrigger = false;
 
         npc.AddComponent<TileVisual>();
@@ -262,10 +265,10 @@ public static class FloatileSceneSetup
         cam.orthographicSize = 7f;
         cam.backgroundColor  = Color.black;
         cam.clearFlags       = CameraClearFlags.SolidColor;
-        cam.transform.position = new Vector3(0f, 30f, -10f);
+        cam.transform.position = new Vector3(0f, 0f, -10f);
 
-        if (cam.GetComponent<CameraFollow>() == null)
-            cam.gameObject.AddComponent<CameraFollow>();
+        CameraFollow follow = cam.GetComponent<CameraFollow>();
+        if (follow != null) Object.DestroyImmediate(follow);
     }
 
     static void WireCameraFollow(GameObject player)
@@ -322,9 +325,7 @@ public static class FloatileSceneSetup
     {
         GameObject bg = new("ArenaBackground");
 
-        // World-space: centered in the arena so it scrolls as the camera moves
-        // This gives parallax motion feedback — player visibly moves against the background
-        bg.transform.position = new Vector3(0f, 30f, 1f); // arena center, behind tiles
+        bg.transform.position = new Vector3(0f, 0f, 1f);
 
         var sr = bg.AddComponent<SpriteRenderer>();
         sr.sprite       = bgSprite;
@@ -332,15 +333,13 @@ public static class FloatileSceneSetup
 
         if (bgSprite != null)
         {
-            // Scale to cover the full 80x60 arena
-            const float arenaW = 80f;
-            const float arenaH = 60f;
+            const float arenaW = 25.5f;
+            const float arenaH = 14.5f;
             float texW  = bgSprite.bounds.size.x;
             float texH  = bgSprite.bounds.size.y;
             float scaleX = arenaW / texW;
             float scaleY = arenaH / texH;
-            float scale  = Mathf.Max(scaleX, scaleY);
-            bg.transform.localScale = new Vector3(scale, scale, 1f);
+            bg.transform.localScale = new Vector3(scaleX, scaleY, 1f);
         }
 
         EditorUtility.SetDirty(bg);
@@ -379,17 +378,19 @@ public static class FloatileSceneSetup
 
     static void CreateWalls()
     {
-        MakeWall("Wall_Left",   new Vector3(-41f, 30f, 0f), new Vector2(1f, 62f));
-        MakeWall("Wall_Right",  new Vector3( 41f, 30f, 0f), new Vector2(1f, 62f));
-        MakeWall("Wall_Bottom", new Vector3(  0f, -1f, 0f), new Vector2(82f,  1f));
-        MakeWall("Wall_Top",    new Vector3(  0f, 61f, 0f), new Vector2(82f,  1f));
+        MakeWall("Wall_Left",   new Vector3(-12.5f,  0f, 0f), new Vector2(0.1f, 14f));
+        MakeWall("Wall_Right",  new Vector3( 12.5f,  0f, 0f), new Vector2(0.1f, 14f));
+        MakeWall("Wall_Bottom", new Vector3(  0f,   -7f, 0f), new Vector2(25f,  0.1f));
+        MakeWall("Wall_Top",    new Vector3(  0f,    7f, 0f), new Vector2(25f,  0.1f));
     }
 
     static void MakeWall(string name, Vector3 pos, Vector2 size)
     {
         GameObject w = new(name);
         w.transform.position = pos;
-        w.AddComponent<BoxCollider2D>().size = size;
+        var col = w.AddComponent<BoxCollider2D>();
+        col.size = size;
+        col.isTrigger = true;
     }
 
     // ── Player ────────────────────────────────────────────────────────────────

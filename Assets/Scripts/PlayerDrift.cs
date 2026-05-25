@@ -7,10 +7,10 @@ public sealed class PlayerDrift : MonoBehaviour
     // Set by UIManager D-pad buttons; accumulated while buttons are held
     public Vector2 ExternalInput { get; set; }
 
-    private const float MIN_X = -40f;
-    private const float MAX_X =  40f;
-    private const float MIN_Y =   0f;
-    private const float MAX_Y =  60f;
+    private const float MIN_X = -12f;
+    private const float MAX_X =  12f;
+    private const float MIN_Y =  -6.5f;
+    private const float MAX_Y =   6.5f;
 
     private Rigidbody2D rb;
     private Camera      mainCam;
@@ -35,7 +35,7 @@ public sealed class PlayerDrift : MonoBehaviour
 
     private void Start()
     {
-        rb.position = new Vector2(0f, 30f);
+        rb.position = Vector2.zero;
         mainCam     = Camera.main;
     }
 

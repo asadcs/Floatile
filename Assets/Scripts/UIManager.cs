@@ -19,10 +19,6 @@ public sealed class UIManager : MonoBehaviour
     GameObject    instructionText;
     GameObject    youLabel;
     GameObject    dpad;
-    Image[]       dotMarkers;   // mini-map dots
-
-    // Mini-map dots pool size
-    const int MINIMAP_DOTS = 20;
 
     // D-pad touch input exposed to PlayerDrift
     Vector2 dpadInput;
@@ -36,7 +32,6 @@ public sealed class UIManager : MonoBehaviour
         BuildInstructionText();
         BuildYouLabel();
         BuildDpad();
-        BuildMinimap();
         BuildButtons();
     }
 
@@ -285,54 +280,6 @@ public sealed class UIManager : MonoBehaviour
         txt.alignment = TextAnchor.MiddleCenter;
     }
 
-    // ── Mini-map ──────────────────────────────────────────────────────────────
-
-    void BuildMinimap()
-    {
-        GameObject map = new("Minimap");
-        map.transform.SetParent(rootCanvas.transform, false);
-
-        var rt = map.AddComponent<RectTransform>();
-        rt.anchorMin = rt.anchorMax = new Vector2(1f, 0f);
-        rt.pivot     = new Vector2(1f, 0f);
-        rt.anchoredPosition = new Vector2(-10f, 10f);
-        rt.sizeDelta        = new Vector2(80f, 60f);
-
-        // Background
-        var bg = map.AddComponent<Image>();
-        bg.color = new Color(0f, 0f, 0f, 0.3f);
-
-        dotMarkers = new Image[MINIMAP_DOTS];
-        for (int i = 0; i < MINIMAP_DOTS; i++)
-        {
-            GameObject dot = new($"Dot_{i}");
-            dot.transform.SetParent(map.transform, false);
-            var dotRt = dot.AddComponent<RectTransform>();
-            dotRt.sizeDelta = new Vector2(4f, 4f);
-            var img = dot.AddComponent<Image>();
-            img.color = Color.white;
-            dot.SetActive(false);
-            dotMarkers[i] = img;
-        }
-    }
-
-    void UpdateMinimap()
-    {
-        if (dotMarkers == null) return;
-        var allNPCs = FindObjectsByType<NPCDrift>(FindObjectsSortMode.None);
-        for (int i = 0; i < dotMarkers.Length; i++)
-        {
-            if (i >= allNPCs.Length) { dotMarkers[i].gameObject.SetActive(false); continue; }
-            dotMarkers[i].gameObject.SetActive(true);
-            // World pos → minimap pos (80×60 arena → 80×60 px minimap)
-            Vector2 wpos = allNPCs[i].transform.position;
-            float mx = (wpos.x + 40f) / 80f * 80f;
-            float my = wpos.y / 60f * 60f;
-            ((RectTransform)dotMarkers[i].transform).anchoredPosition = new Vector2(mx, my);
-            dotMarkers[i].color = TierColorTable.ForTier(allNPCs[i].Tier);
-        }
-    }
-
     // ── Top buttons ───────────────────────────────────────────────────────────
 
     void BuildButtons()
@@ -412,7 +359,6 @@ public sealed class UIManager : MonoBehaviour
                 NotifyFirstMove();
         }
         UpdateYouLabelPos();
-        UpdateMinimap();
     }
 
     void UpdateYouLabelPos()

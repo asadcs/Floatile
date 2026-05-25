@@ -16,8 +16,8 @@ public sealed class SpecialTile : MonoBehaviour
     [SerializeField] private TileKind     kind;
 
     const float DRIFT_SPEED = 0.5f;
-    const float MIN_X = -40f, MAX_X = 40f;
-    const float MIN_Y =   0f, MAX_Y = 60f;
+    const float MIN_X = -12f, MAX_X = 12f;
+    const float MIN_Y =  -6f, MAX_Y =  6f;
 
     Rigidbody2D rb;
     Vector2     dir;
