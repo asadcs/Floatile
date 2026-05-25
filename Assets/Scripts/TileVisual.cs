@@ -7,12 +7,17 @@ public sealed class TileVisual : MonoBehaviour
     [SerializeField] private Color  tileColor  = new Color(0f, 0f, 0f, 0f);
     [SerializeField] private string tierLabel  = "2";
 
-    // Tweak this on the Player tile in the Inspector — affects all tiles globally.
-    // 1.10 = very subtle, 1.15 = mild, 1.22 = noticeable, 1.30 = aggressive
-    [SerializeField] private float growthFactor = 1.22f;
+    [Header("Tier Scaling")]
+    [Tooltip("Growth per tier within a bracket. 1.03=subtle  1.05=default  1.08=noticeable")]
+    [SerializeField] private float   innerFactor = 1.05f;
+    [Tooltip("Start size for each bracket: [units 2-512, K, M, B, T]")]
+    [SerializeField] private float[] rangeBases  = { 0.50f, 0.85f, 1.50f, 2.60f, 3.00f };
+    [Tooltip("Hard size cap in world units")]
+    [SerializeField] private float   sizeMax     = 3.0f;
 
-    // Shared across all instances — set from whichever TileVisual runs Awake first (the player)
-    public static float GrowthFactor = 1.22f;
+    public static float   InnerFactor = 1.05f;
+    public static float[] RangeBases  = { 0.50f, 0.85f, 1.50f, 2.60f, 3.00f };
+    public static float   SizeMax     = 3.0f;
 
     private SpriteRenderer spriteRenderer;
     private TextMesh       label;
@@ -24,7 +29,9 @@ public sealed class TileVisual : MonoBehaviour
 
     private void Awake()
     {
-        GrowthFactor   = growthFactor;
+        InnerFactor = innerFactor;
+        RangeBases  = rangeBases;
+        SizeMax     = sizeMax;
         spriteRenderer = GetComponent<SpriteRenderer>();
         EnsureLabels();
         ConfigureSprite();
@@ -132,8 +139,15 @@ public sealed class TileVisual : MonoBehaviour
 
     // ── Tier scaling ──────────────────────────────────────────────────────────
 
-    public static float TierScale(long tier) =>
-        Mathf.Clamp(0.5f * Mathf.Pow(GrowthFactor, Mathf.Log(tier, 2f)), 0.5f, 2.5f);
+    public static float TierScale(long tier)
+    {
+        int n = Mathf.Max(1, Mathf.RoundToInt(Mathf.Log(tier, 2f)));
+        int bracket, pos;
+        if (n <= 9) { bracket = 0; pos = n - 1; }
+        else        { bracket = 1 + (n - 10) / 10; pos = (n - 10) % 10; }
+        float baseSize = bracket < RangeBases.Length ? RangeBases[bracket] : RangeBases[RangeBases.Length - 1];
+        return Mathf.Min(baseSize * Mathf.Pow(InnerFactor, pos), SizeMax);
+    }
 
     public void ApplyTierScale(long tier) =>
         transform.localScale = Vector3.one * TierScale(tier);
