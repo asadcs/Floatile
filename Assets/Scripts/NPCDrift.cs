@@ -11,16 +11,14 @@ public sealed class NPCDrift : MonoBehaviour
         get => tier;
         set
         {
-            tier = value;
+            tier      = value;
+            baseSpeed = TileProgression.NpcSpeed(tier);
             visual?.SetTier(tier);
-            ApplySpeed();
+            if (ArenaState.Instance != null) ArenaState.Instance.UpdateTier(_arenaId, tier);
         }
     }
 
-    const float MIN_Y      = -7f;
-    const float MAX_Y      =  7f;
-    const float EXIT_RIGHT =  13f;
-    const float WANDER     =  1.5f;  // vertical drift per second
+    const float WANDER = 1.5f;  // vertical drift amplitude
 
     Rigidbody2D rb;
     TileVisual  visual;
@@ -28,6 +26,7 @@ public sealed class NPCDrift : MonoBehaviour
     float       baseSpeed;
     float       vertDir;
     float       wanderTimer;
+    int         _arenaId = -1;
 
     void Awake()
     {
@@ -41,19 +40,22 @@ public sealed class NPCDrift : MonoBehaviour
         vertDir     = Random.Range(-1f, 1f);
         wanderTimer = Random.Range(1.5f, 4f);
 
+        baseSpeed = TileProgression.NpcSpeed(tier);
         visual.SetTier(tier);
-        ApplySpeed();
     }
 
     void Start()
     {
         var p = GameObject.FindWithTag("Player");
         if (p != null) playerTransform = p.transform;
+        if (ArenaState.Instance != null) _arenaId = ArenaState.Instance.Register(tier);
     }
+
+    void OnDestroy() => ArenaState.Instance?.Unregister(_arenaId);
 
     void FixedUpdate()
     {
-        if (rb.position.x > EXIT_RIGHT)
+        if (rb.position.x > ArenaState.MaxX)
         {
             Destroy(gameObject);
             return;
@@ -61,7 +63,7 @@ public sealed class NPCDrift : MonoBehaviour
 
         Vector2 vel = new(baseSpeed, vertDir * WANDER);
 
-        // Proximity avoidance: flee if smaller than player and too close
+        // Proximity avoidance: flee if smaller than player and within range
         if (playerTransform != null)
         {
             var prog = playerTransform.GetComponent<PlayerProgression>();
@@ -78,7 +80,7 @@ public sealed class NPCDrift : MonoBehaviour
 
         // Vertical wall bounce
         float nextY = rb.position.y + vel.y * Time.fixedDeltaTime;
-        if (nextY < MIN_Y || nextY > MAX_Y)
+        if (nextY < ArenaState.MinY || nextY > ArenaState.MaxY)
         {
             vertDir = -vertDir;
             vel.y   = -vel.y;
@@ -92,12 +94,5 @@ public sealed class NPCDrift : MonoBehaviour
             vertDir     = Random.Range(-1f, 1f);
             wanderTimer = Random.Range(1.5f, 4f);
         }
-    }
-
-    void ApplySpeed()
-    {
-        if (tier <= 4)       baseSpeed = 1.5f;
-        else if (tier <= 32) baseSpeed = 2.0f;
-        else                 baseSpeed = 2.5f;
     }
 }

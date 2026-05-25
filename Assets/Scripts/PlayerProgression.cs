@@ -6,13 +6,22 @@ public sealed class PlayerProgression : MonoBehaviour
     public long Tier { get; private set; } = 2;
     public long CurrentTier => Tier;
 
-    // Points accumulated toward the next tier-up
     long accumulatedPoints;
-
-    // Tier-up threshold = current tier (e.g. at tier 4: need 4 points to reach tier 8)
     long Threshold => Tier;
 
-    public event Action<long> OnTierChanged;  // fires with new tier value
+    public event Action<long> OnTierChanged;
+
+    int _arenaId = -1;
+
+    void Start()
+    {
+        if (ArenaState.Instance != null) _arenaId = ArenaState.Instance.Register(Tier);
+    }
+
+    void OnDestroy()
+    {
+        ArenaState.Instance?.Unregister(_arenaId);
+    }
 
     public void AddPoints(long points)
     {
@@ -24,18 +33,17 @@ public sealed class PlayerProgression : MonoBehaviour
         }
     }
 
-    // Called when player eats a tile with the same tier (instant EVOLVE)
     public void EvolveInstant()
     {
         accumulatedPoints = 0;
         DoubleTier();
     }
 
-    // Called on penalty: tier halved, floor at 2
     public void ApplyPenalty()
     {
         accumulatedPoints = 0;
         Tier = Math.Max(2L, Tier / 2);
+        ArenaState.Instance?.UpdateTier(_arenaId, Tier);
         OnTierChanged?.Invoke(Tier);
     }
 
@@ -43,10 +51,10 @@ public sealed class PlayerProgression : MonoBehaviour
     {
         long next = ComputeSpecial(op);
         next = Math.Max(2L, next);
-        // Overflow guard for ^ operators
         if (next < 2) next = 2;
         Tier = next;
         accumulatedPoints = 0;
+        ArenaState.Instance?.UpdateTier(_arenaId, Tier);
         OnTierChanged?.Invoke(Tier);
     }
 
@@ -106,6 +114,7 @@ public sealed class PlayerProgression : MonoBehaviour
     void DoubleTier()
     {
         Tier = Tier >= long.MaxValue / 2 ? long.MaxValue : Tier * 2;
+        ArenaState.Instance?.UpdateTier(_arenaId, Tier);
         OnTierChanged?.Invoke(Tier);
     }
 

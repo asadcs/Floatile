@@ -7,17 +7,6 @@ public sealed class TileVisual : MonoBehaviour
     [SerializeField] private Color  tileColor  = new Color(0f, 0f, 0f, 0f);
     [SerializeField] private string tierLabel  = "2";
 
-    [Header("Tier Scaling")]
-    [Tooltip("Growth per tier within a bracket. 1.03=subtle  1.05=default  1.08=noticeable")]
-    [SerializeField] private float   innerFactor = 1.05f;
-    [Tooltip("Start size for each bracket: [units 2-512, K, M, B, T]")]
-    [SerializeField] private float[] rangeBases  = { 0.25f, 0.43f, 0.75f, 1.30f, 1.50f };
-    [Tooltip("Hard size cap in world units")]
-    [SerializeField] private float   sizeMax     = 1.50f;
-
-    public static float   InnerFactor = 1.05f;
-    public static float[] RangeBases  = { 0.25f, 0.43f, 0.75f, 1.30f, 1.50f };
-    public static float   SizeMax     = 1.50f;
 
     private SpriteRenderer spriteRenderer;
     private TextMesh       label;
@@ -29,9 +18,6 @@ public sealed class TileVisual : MonoBehaviour
 
     private void Awake()
     {
-        InnerFactor = innerFactor;
-        RangeBases  = rangeBases;
-        SizeMax     = sizeMax;
         spriteRenderer = GetComponent<SpriteRenderer>();
         EnsureLabels();
         ConfigureSprite();
@@ -139,15 +125,7 @@ public sealed class TileVisual : MonoBehaviour
 
     // ── Tier scaling ──────────────────────────────────────────────────────────
 
-    public static float TierScale(long tier)
-    {
-        int n = Mathf.Max(1, Mathf.RoundToInt(Mathf.Log(tier, 2f)));
-        int bracket, pos;
-        if (n <= 9) { bracket = 0; pos = n - 1; }
-        else        { bracket = 1 + (n - 10) / 10; pos = (n - 10) % 10; }
-        float baseSize = bracket < RangeBases.Length ? RangeBases[bracket] : RangeBases[RangeBases.Length - 1];
-        return Mathf.Min(baseSize * Mathf.Pow(InnerFactor, pos), SizeMax);
-    }
+    public static float TierScale(long tier) => TileProgression.PhysicalSize(tier);
 
     public void ApplyTierScale(long tier) =>
         transform.localScale = Vector3.one * TierScale(tier);

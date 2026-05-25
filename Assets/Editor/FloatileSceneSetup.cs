@@ -45,6 +45,7 @@ public static class FloatileSceneSetup
         CreateMusic();
         CreateWalls();
         CreateGameManager();
+        CreateArenaState();
         GameObject player        = CreatePlayerSprint1(tileSprite);
         GameObject npcPrefab     = CreateNpcDriftPrefab(tileSprite);
         GameObject specialPrefab = CreateSpecialTilePrefab(tileSprite);
@@ -67,7 +68,7 @@ public static class FloatileSceneSetup
         string[] names = { "Wall_Left","Wall_Right","Wall_Bottom","Wall_Top",
                            "Player","NPC_Prefab","ArenaSpawner",
                            "ArenaBackground","GlobalVolume","MusicManager",
-                           "GameManager","UIManager" };
+                           "GameManager","ArenaState","UIManager" };
         foreach (string n in names)
         {
             GameObject old = GameObject.Find(n);
@@ -79,6 +80,13 @@ public static class FloatileSceneSetup
     {
         GameObject go = new("GameManager");
         go.AddComponent<GameManager>();
+        EditorUtility.SetDirty(go);
+    }
+
+    static void CreateArenaState()
+    {
+        GameObject go = new("ArenaState");
+        go.AddComponent<ArenaState>();
         EditorUtility.SetDirty(go);
     }
 
@@ -267,8 +275,10 @@ public static class FloatileSceneSetup
         cam.clearFlags       = CameraClearFlags.SolidColor;
         cam.transform.position = new Vector3(0f, 0f, -10f);
 
+        // Ensure CameraFollow is present (remove + re-add to reset state)
         CameraFollow follow = cam.GetComponent<CameraFollow>();
         if (follow != null) Object.DestroyImmediate(follow);
+        cam.gameObject.AddComponent<CameraFollow>();
     }
 
     static void WireCameraFollow(GameObject player)
@@ -333,13 +343,12 @@ public static class FloatileSceneSetup
 
         if (bgSprite != null)
         {
-            const float arenaW = 25.5f;
-            const float arenaH = 14.5f;
+            // Cover max camera zoom-out (OrthoBase+OrthoRange=18 → ~72×40 world units) plus margin
+            const float coverW = 80f;
+            const float coverH = 44f;
             float texW  = bgSprite.bounds.size.x;
             float texH  = bgSprite.bounds.size.y;
-            float scaleX = arenaW / texW;
-            float scaleY = arenaH / texH;
-            bg.transform.localScale = new Vector3(scaleX, scaleY, 1f);
+            bg.transform.localScale = new Vector3(coverW / texW, coverH / texH, 1f);
         }
 
         EditorUtility.SetDirty(bg);

@@ -16,8 +16,6 @@ public sealed class SpecialTile : MonoBehaviour
     [SerializeField] private TileKind     kind;
 
     const float DRIFT_SPEED = 0.5f;
-    const float MIN_X = -12f, MAX_X = 12f;
-    const float MIN_Y =  -6f, MAX_Y =  6f;
 
     Rigidbody2D rb;
     Vector2     dir;
@@ -76,8 +74,8 @@ public sealed class SpecialTile : MonoBehaviour
     {
         Vector2 next = rb.position + dir * DRIFT_SPEED * Time.fixedDeltaTime;
 
-        if (next.x <= MIN_X || next.x >= MAX_X) { dir.x = -dir.x; next.x = Mathf.Clamp(next.x, MIN_X, MAX_X); }
-        if (next.y <= MIN_Y || next.y >= MAX_Y) { dir.y = -dir.y; next.y = Mathf.Clamp(next.y, MIN_Y, MAX_Y); }
+        if (next.x <= ArenaState.MinX || next.x >= ArenaState.MaxX) { dir.x = -dir.x; next.x = Mathf.Clamp(next.x, ArenaState.MinX, ArenaState.MaxX); }
+        if (next.y <= ArenaState.MinY || next.y >= ArenaState.MaxY) { dir.y = -dir.y; next.y = Mathf.Clamp(next.y, ArenaState.MinY, ArenaState.MaxY); }
 
         rb.MovePosition(next);
     }
