@@ -124,21 +124,8 @@ public sealed class TileVisual : MonoBehaviour
 
     // ── Tier scaling ──────────────────────────────────────────────────────────
 
-    public static float TierScale(long tier)
-    {
-        // Base 0.25 world unit at tier 2 ≈ 1% of 25-unit arena width
-        // Growth is extremely subtle — max 0.35 at legendary tiers
-        if (tier >= 4_000_000L) return 0.35f;
-        if (tier >= 1_000_000L) return 0.34f;
-        if (tier >= 16_000L)    return 0.33f;
-        if (tier >= 4_000L)     return 0.32f;
-        if (tier >= 1_000L)     return 0.31f;
-        if (tier >= 256L)       return 0.30f;
-        if (tier >= 64L)        return 0.29f;
-        if (tier >= 16L)        return 0.27f;
-        if (tier >= 4L)         return 0.26f;
-        return 0.25f;
-    }
+    public static float TierScale(long tier) =>
+        Mathf.Clamp(0.5f * Mathf.Pow(1.22f, Mathf.Log(tier, 2f)), 0.5f, 2.5f);
 
     public void ApplyTierScale(long tier) =>
         transform.localScale = Vector3.one * TierScale(tier);
