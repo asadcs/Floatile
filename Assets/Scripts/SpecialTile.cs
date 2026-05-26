@@ -18,6 +18,7 @@ public sealed class SpecialTile : MonoBehaviour
 
     Rigidbody2D rb;
     Vector2     dir;
+    Transform   _player;
 
     static readonly Color WHITE_TILE = new(1f, 1f, 1f, 1f);
     static readonly Color BLACK_TILE = new(0.102f, 0.102f, 0.102f, 1f);
@@ -48,7 +49,12 @@ public sealed class SpecialTile : MonoBehaviour
             tv.SetVisual(tileSprite, k == TileKind.White ? WHITE_TILE : BLACK_TILE, SymbolFor(op));
         }
 
-        transform.localScale = Vector3.one * TileProgression.SpecialTileScale();
+        float scale = TileProgression.SpecialTileScale();
+        if (k == TileKind.Black) scale *= TileProgression.BlackTileScaleMultiplier;
+        transform.localScale = Vector3.one * scale;
+
+        // Each tile kind manages its own lifespan.
+        Destroy(gameObject, k == TileKind.Black ? TileProgression.BlackTileLifespan : TileProgression.WhiteTileLifespan);
     }
 
     void Awake()
@@ -68,9 +74,24 @@ public sealed class SpecialTile : MonoBehaviour
         if (dir.sqrMagnitude < 0.01f) dir = Vector2.right;
     }
 
+    void Start()
+    {
+        var p = GameObject.FindWithTag("Player");
+        if (p != null) _player = p.transform;
+    }
+
     void FixedUpdate()
     {
-        Vector2 next = rb.position + dir * TileProgression.SpecialDriftSpeed * Time.fixedDeltaTime;
+        // Black tiles home toward the player — shark behavior.
+        // dir rotates gradually so the tile arcs toward the player rather than snapping.
+        if (kind == TileKind.Black && _player != null)
+        {
+            Vector2 toward = ((Vector2)_player.position - rb.position).normalized;
+            dir = Vector2.Lerp(dir, toward, TileProgression.BlackTileChaseStrength * Time.fixedDeltaTime).normalized;
+        }
+
+        float speed = kind == TileKind.Black ? TileProgression.BlackTileChaseSpeed : TileProgression.SpecialDriftSpeed;
+        Vector2 next = rb.position + dir * speed * Time.fixedDeltaTime;
 
         if (next.x <= ArenaState.MinX || next.x >= ArenaState.MaxX) { dir.x = -dir.x; next.x = Mathf.Clamp(next.x, ArenaState.MinX, ArenaState.MaxX); }
         if (next.y <= ArenaState.MinY || next.y >= ArenaState.MaxY) { dir.y = -dir.y; next.y = Mathf.Clamp(next.y, ArenaState.MinY, ArenaState.MaxY); }

@@ -44,8 +44,13 @@ public static class TileProgression
     public static float ChaseSpeedFactor    = 0.5f;  // fraction of baseSpeed used for chase drift
     public static float ChaseDetectFactor   = 4f;    // InfluenceRadius multiplier for chase detection
     public static float InvincibilityDuration = 1.5f; // post-penalty invincibility window (seconds)
-    public static float SpecialDriftSpeed    = 0.5f;  // special tile movement speed
-    public static long  SpecialTileVisualTier = 16L;  // reference tier for special tile visual size
+    public static float SpecialDriftSpeed      = 0.5f;  // white tile drift speed
+    public static long  SpecialTileVisualTier  = 16L;  // reference tier for special tile visual size
+    public static float BlackTileChaseSpeed    = 2.5f;  // black tile movement speed (u/s)
+    public static float BlackTileChaseStrength = 2.0f;  // turn rate toward player (rad/s approx)
+    public static float BlackTileScaleMultiplier = 1.8f; // black tile is bigger — more threatening
+    public static float BlackTileLifespan      = 10f;   // seconds before black tile disappears
+    public static float WhiteTileLifespan      = 30f;   // seconds before white tile disappears
 
     // ── Core progression value ────────────────────────────────────────────────
     // P = log2(tier): tier 2→1, tier 4→2, tier 8→3, tier 1K→10, tier 1M→20 ...

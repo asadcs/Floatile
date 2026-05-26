@@ -196,8 +196,6 @@ public sealed class ArenaSpawner : MonoBehaviour
 
         GameObject obj = Instantiate(specialTilePrefab, pos, Quaternion.identity);
         var st = obj.GetComponent<SpecialTile>();
-        st?.Init(op, kind, tileSprite);
-
-        Destroy(obj, 30f);
+        st?.Init(op, kind, tileSprite); // Init calls Destroy with kind-specific lifespan
     }
 }
