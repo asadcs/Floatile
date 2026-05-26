@@ -118,9 +118,10 @@ public static class FloatileSceneSetup
         p.AddComponent<PlayerDrift>();
         p.AddComponent<PlayerProgression>();
         p.AddComponent<EatSystem>();
+        p.AddComponent<CollisionFX>();
 
         EditorUtility.SetDirty(p);
-        Debug.Log($"[Sprint1 Setup] Player created — isTrigger=true, PlayerProgression+EatSystem added.");
+        Debug.Log($"[Sprint1 Setup] Player created — isTrigger=true, PlayerProgression+EatSystem+CollisionFX added.");
         return p;
     }
 

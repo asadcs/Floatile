@@ -13,7 +13,8 @@ public sealed class TileVisual : MonoBehaviour
     private TextMesh       labelShadow;
     private SpriteRenderer shadowRenderer;
 
-    static readonly Color LABEL_COLOR  = new Color(1f, 0.97f, 0.93f, 1f);   // warm cream white
+    static readonly Color LABEL_LIGHT  = new Color(1f, 0.97f, 0.93f, 1f);   // warm cream — for dark tiles
+    static readonly Color LABEL_DARK   = new Color(0.10f, 0.10f, 0.10f, 1f); // near-black — for light tiles
     static readonly Color SHADOW_COLOR = new Color(0f, 0f, 0f, 0.25f);       // soft dark shadow
 
     private void Awake()
@@ -62,12 +63,20 @@ public sealed class TileVisual : MonoBehaviour
     private void ConfigureLabels()
     {
         float cs = CharSize(tierLabel.Length);
+        Color lc = LabelColorFor(tileColor);
 
         ApplyTextMesh(labelShadow, tierLabel, SHADOW_COLOR, cs,
                       new Vector3(0.025f, -0.03f, -0.05f), sortOrder: 2);
 
-        ApplyTextMesh(label, tierLabel, LABEL_COLOR, cs,
+        ApplyTextMesh(label, tierLabel, lc, cs,
                       new Vector3(0f, 0f, -0.1f), sortOrder: 3);
+    }
+
+    // Perceived luminance threshold: dark background → light label, light background → dark label.
+    static Color LabelColorFor(Color bg)
+    {
+        float lum = 0.299f * bg.r + 0.587f * bg.g + 0.114f * bg.b;
+        return lum > 0.55f ? LABEL_DARK : LABEL_LIGHT;
     }
 
     // Fills ~60% of tile. fontSize=32 controls quality only; characterSize is the physical world size.
