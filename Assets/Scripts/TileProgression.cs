@@ -39,6 +39,10 @@ public static class TileProgression
     public static float PlayerSpeedDecay     = 0.10f;  // decay per P unit (gentler than NPC)
 
     public static float AvoidanceMinRadius   = 2.0f;  // floor for NPC flee detection range
+    public static int   ThreatRangeAboveP   = 4;     // P-units above player included in spawn pool
+    public static float PredatorMinDeltaP   = 2f;    // P-unit lead before an NPC starts chasing
+    public static float ChaseSpeedFactor    = 0.5f;  // fraction of baseSpeed used for chase drift
+    public static float ChaseDetectFactor   = 4f;    // InfluenceRadius multiplier for chase detection
     public static float InvincibilityDuration = 1.5f; // post-penalty invincibility window (seconds)
     public static float SpecialDriftSpeed    = 0.5f;  // special tile movement speed
     public static long  SpecialTileVisualTier = 16L;  // reference tier for special tile visual size

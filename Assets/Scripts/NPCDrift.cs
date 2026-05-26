@@ -64,19 +64,32 @@ public sealed class NPCDrift : MonoBehaviour
 
         Vector2 vel = new(baseSpeed, vertDir * wander);
 
-        // Proximity avoidance: flee if smaller than player and within avoidance range.
-        // AvoidanceMinRadius (2f) floors the range so even tiny tiles have meaningful evasion.
+        // Prey flees; predator chases. Determined by P-unit gap relative to player.
         if (playerTransform != null)
         {
             var prog = playerTransform.GetComponent<PlayerProgression>();
             if (prog != null && tier < prog.Tier)
             {
-                float dist      = Vector2.Distance(rb.position, (Vector2)playerTransform.position);
+                // Flee: this NPC is smaller than the player — run away within avoidance range.
+                float dist       = Vector2.Distance(rb.position, (Vector2)playerTransform.position);
                 float avoidRange = Mathf.Max(TileProgression.InfluenceRadius(tier), TileProgression.AvoidanceMinRadius);
                 if (dist < avoidRange)
                 {
                     Vector2 away = (rb.position - (Vector2)playerTransform.position).normalized;
                     vel += away * baseSpeed * 0.8f;
+                }
+            }
+            else if (prog != null &&
+                     TileProgression.P(tier) >= TileProgression.P(prog.Tier) + TileProgression.PredatorMinDeltaP)
+            {
+                // Chase: this NPC is ≥ PredatorMinDeltaP P-units (4×) bigger — drift toward player.
+                // Slow and heavy: player can outrun it but cannot ignore it.
+                float dist       = Vector2.Distance(rb.position, (Vector2)playerTransform.position);
+                float chaseRange = TileProgression.InfluenceRadius(tier) * TileProgression.ChaseDetectFactor;
+                if (dist < chaseRange)
+                {
+                    Vector2 toward = ((Vector2)playerTransform.position - rb.position).normalized;
+                    vel += toward * baseSpeed * TileProgression.ChaseSpeedFactor;
                 }
             }
         }

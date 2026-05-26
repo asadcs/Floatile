@@ -111,18 +111,23 @@ public sealed class ArenaSpawner : MonoBehaviour
     public void ForceSpawnWhite() => SpawnSpecial(SpecialTile.TileKind.White);
     public void ForceSpawnBlack() => SpawnSpecial(SpecialTile.TileKind.Black);
 
-    // Binary pyramid: AvailabilityScore uses exp(-ln(2)*P) so each tier-doubling halves weight.
-    // Tier 2 is always most common regardless of player progression.
+    // Blended spawn distribution: max(SpawnWeight, AvailabilityScore).
+    // SpawnWeight (relative) creates a tension zone around the player tier — prey below, threats above.
+    // AvailabilityScore (absolute) floors small-tier weights so tiny prey always exists.
+    // Pool extends ThreatRangeAboveP P-units above player so threats always appear at any tier.
     long PickSpawnTier()
     {
-        long player = playerProg != null ? playerProg.CurrentTier : 2L;
-        int  maxP   = Mathf.Max(4, Mathf.RoundToInt(TileProgression.P(player)) + 2);
+        long player  = playerProg != null ? playerProg.CurrentTier : 2L;
+        int  playerP = Mathf.Max(1, Mathf.RoundToInt(TileProgression.P(player)));
+        int  maxP    = playerP + TileProgression.ThreatRangeAboveP;
 
         var candidates = new List<(long tier, float w)>(maxP);
         for (int p = 1; p <= maxP; p++)
         {
-            long t = 1L << p;
-            candidates.Add((t, TileProgression.AvailabilityScore(t)));
+            long  t    = 1L << p;
+            float relW = TileProgression.SpawnWeight(t, player);
+            float absW = TileProgression.AvailabilityScore(t);
+            candidates.Add((t, Mathf.Max(relW, absW)));
         }
 
         float total = 0f;
