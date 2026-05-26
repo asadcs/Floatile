@@ -15,7 +15,6 @@ public sealed class SpecialTile : MonoBehaviour
     [SerializeField] private OperatorType operatorType;
     [SerializeField] private TileKind     kind;
 
-    const float DRIFT_SPEED = 0.5f;
 
     Rigidbody2D rb;
     Vector2     dir;
@@ -49,8 +48,7 @@ public sealed class SpecialTile : MonoBehaviour
             tv.SetVisual(tileSprite, k == TileKind.White ? WHITE_TILE : BLACK_TILE, SymbolFor(op));
         }
 
-        // Fixed scale — special tiles are mid-size
-        transform.localScale = Vector3.one * TileVisual.TierScale(16);
+        transform.localScale = Vector3.one * TileProgression.SpecialTileScale();
     }
 
     void Awake()
@@ -72,7 +70,7 @@ public sealed class SpecialTile : MonoBehaviour
 
     void FixedUpdate()
     {
-        Vector2 next = rb.position + dir * DRIFT_SPEED * Time.fixedDeltaTime;
+        Vector2 next = rb.position + dir * TileProgression.SpecialDriftSpeed * Time.fixedDeltaTime;
 
         if (next.x <= ArenaState.MinX || next.x >= ArenaState.MaxX) { dir.x = -dir.x; next.x = Mathf.Clamp(next.x, ArenaState.MinX, ArenaState.MaxX); }
         if (next.y <= ArenaState.MinY || next.y >= ArenaState.MaxY) { dir.y = -dir.y; next.y = Mathf.Clamp(next.y, ArenaState.MinY, ArenaState.MaxY); }

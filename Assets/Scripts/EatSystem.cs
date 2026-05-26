@@ -10,7 +10,6 @@ public sealed class EatSystem : MonoBehaviour
     public event Action<long>          OnPenalty;       // (newTier)
     public event Action<SpecialTile>   OnSpecialCollect;
 
-    const float INVINCIBILITY_DURATION = 1.5f;
 
     bool invincible;
     PlayerProgression progression;
@@ -74,7 +73,7 @@ public sealed class EatSystem : MonoBehaviour
     IEnumerator InvincibilityWindow()
     {
         invincible = true;
-        yield return new WaitForSeconds(INVINCIBILITY_DURATION);
+        yield return new WaitForSeconds(TileProgression.InvincibilityDuration);
         invincible = false;
     }
 }

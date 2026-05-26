@@ -34,6 +34,11 @@ public static class TileProgression
     public static float SpawnIntervalScale       = 8.0f;   // max additional seconds at full pressure
     public static float SpawnIntervalSensitivity = 0.3f;
 
+    public static float AvoidanceMinRadius   = 2.0f;  // floor for NPC flee detection range
+    public static float InvincibilityDuration = 1.5f; // post-penalty invincibility window (seconds)
+    public static float SpecialDriftSpeed    = 0.5f;  // special tile movement speed
+    public static long  SpecialTileVisualTier = 16L;  // reference tier for special tile visual size
+
     // ── Core progression value ────────────────────────────────────────────────
     // P = log2(tier): tier 2→1, tier 4→2, tier 8→3, tier 1K→10, tier 1M→20 ...
     public static float P(long v) => v >= 2 ? Mathf.Log(v, 2f) : 0f;
@@ -75,8 +80,9 @@ public static class TileProgression
     // PRESSURE — tile's area footprint (size²). Feeds OccupancyRatio.
     public static float PressureScore(long v) { float s = PhysicalSize(v); return s * s; }
 
-    // TEMPORAL PRESSURE — per-tile contribution to spawn-rate slowdown (proportional to size).
-    public static float TemporalPressureScore(long v) => PhysicalSize(v);
+    // TEMPORAL PRESSURE — per-tile spawn-rate contribution: size × weight, so large heavy tiles
+    // slow the arena more than linearly. Distinct from GlobalDensity (Σ PhysicalSize).
+    public static float TemporalPressureScore(long v) => PhysicalSize(v) * WeightScore(v);
 
     // TARGET SPAWN INTERVAL — seconds between NPC spawns driven by global temporal pressure.
     // empty arena: 0.5s  |  full arena: ~8.5s
@@ -115,6 +121,9 @@ public static class TileProgression
 
     // INFLUENCE RADIUS — spatial footprint; used for avoidance and density fields.
     public static float InfluenceRadius(long v) => PhysicalSize(v) * InfluenceRadiusScale;
+
+    // SPECIAL TILE SCALE — visual size for special tiles, evaluated on the shared PhysicalSize curve.
+    public static float SpecialTileScale() => PhysicalSize(SpecialTileVisualTier);
 
     // ── Internal helpers ──────────────────────────────────────────────────────
     static float Tanh(float x) { float e2 = Mathf.Exp(2f * x); return (e2 - 1f) / (e2 + 1f); }
