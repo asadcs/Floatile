@@ -51,6 +51,9 @@ public static class TileProgression
     public static float BlackTileScaleMultiplier = 1.8f; // black tile is bigger — more threatening
     public static float BlackTileLifespan      = 10f;   // seconds before black tile disappears
     public static float WhiteTileLifespan      = 30f;   // seconds before white tile disappears
+    public static float WhiteTileFleeSpeed     = 3.5f;  // white tile escape speed (u/s) — fast and elusive
+    public static float WhiteTileFleeStrength  = 4.0f;  // turn rate away from player (rad/s approx)
+    public static float WhiteTileDetectRange   = 8.0f;  // radius within which white tile notices player
 
     // ── Core progression value ────────────────────────────────────────────────
     // P = log2(tier): tier 2→1, tier 4→2, tier 8→3, tier 1K→10, tier 1M→20 ...

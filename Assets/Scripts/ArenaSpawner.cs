@@ -7,6 +7,8 @@ public sealed class ArenaSpawner : MonoBehaviour
     [SerializeField] private GameObject npcPrefab;
     [SerializeField] private GameObject specialTilePrefab;
     [SerializeField] private Sprite     tileSprite;
+    [SerializeField] private Sprite     goldenSprite;   // golden tile art for white (benefit) tiles
+    [SerializeField] private Sprite     hellSprite;     // hell tile art for black (threat) tiles
 
     [SerializeField] private int maxNPCs = 15;
     [SerializeField] private int minNPCs = 5;
@@ -196,6 +198,7 @@ public sealed class ArenaSpawner : MonoBehaviour
 
         GameObject obj = Instantiate(specialTilePrefab, pos, Quaternion.identity);
         var st = obj.GetComponent<SpecialTile>();
-        st?.Init(op, kind, tileSprite); // Init calls Destroy with kind-specific lifespan
+        Sprite art = kind == SpecialTile.TileKind.White ? goldenSprite : hellSprite;
+        st?.Init(op, kind, tileSprite, art);
     }
 }

@@ -27,33 +27,34 @@ public sealed class SpecialTile : MonoBehaviour
 
     public OperatorType Operator => operatorType;
 
-    // Called by ArenaSpawner after instantiation
-    public void Init(OperatorType op, TileKind k, Sprite tileSprite)
+    // Called by ArenaSpawner after instantiation.
+    // customSprite: golden or hell artwork. When provided, sr.color stays white so the artwork
+    // renders true-to-art; bgHint drives label luminance in TileVisual instead.
+    public void Init(OperatorType op, TileKind k, Sprite tileSprite, Sprite customSprite = null)
     {
         operatorType = op;
         kind         = k;
 
+        Color bgHint  = k == TileKind.White ? WHITE_TILE : BLACK_TILE;
+        bool  hasArt  = customSprite != null;
+        Sprite visual = hasArt ? customSprite : tileSprite;
+
         var sr = GetComponent<SpriteRenderer>();
         if (sr != null)
         {
-            sr.sprite       = tileSprite;
-            sr.color        = k == TileKind.White ? WHITE_TILE : BLACK_TILE;
+            sr.sprite       = visual;
+            sr.color        = hasArt ? Color.white : bgHint;  // don't tint custom artwork
             sr.sortingOrder = 1;
         }
 
-        // Display operator symbol on tile face
         var tv = GetComponent<TileVisual>();
         if (tv != null)
-        {
-            Color labelCol = k == TileKind.White ? TEXT_DARK : TEXT_LIGHT;
-            tv.SetVisual(tileSprite, k == TileKind.White ? WHITE_TILE : BLACK_TILE, SymbolFor(op));
-        }
+            tv.SetVisual(visual, bgHint, SymbolFor(op));  // bgHint drives label luminance
 
         float scale = TileProgression.SpecialTileScale();
         if (k == TileKind.Black) scale *= TileProgression.BlackTileScaleMultiplier;
         transform.localScale = Vector3.one * scale;
 
-        // Each tile kind manages its own lifespan.
         Destroy(gameObject, k == TileKind.Black ? TileProgression.BlackTileLifespan : TileProgression.WhiteTileLifespan);
     }
 
@@ -82,15 +83,29 @@ public sealed class SpecialTile : MonoBehaviour
 
     void FixedUpdate()
     {
-        // Black tiles home toward the player — shark behavior.
-        // dir rotates gradually so the tile arcs toward the player rather than snapping.
-        if (kind == TileKind.Black && _player != null)
+        if (_player != null)
         {
-            Vector2 toward = ((Vector2)_player.position - rb.position).normalized;
-            dir = Vector2.Lerp(dir, toward, TileProgression.BlackTileChaseStrength * Time.fixedDeltaTime).normalized;
+            if (kind == TileKind.Black)
+            {
+                // Shark: arc gradually toward player.
+                Vector2 toward = ((Vector2)_player.position - rb.position).normalized;
+                dir = Vector2.Lerp(dir, toward, TileProgression.BlackTileChaseStrength * Time.fixedDeltaTime).normalized;
+            }
+            else if (kind == TileKind.White)
+            {
+                // Golden tile: flee when player enters detection range — elusive, must be chased.
+                float dist = Vector2.Distance(rb.position, (Vector2)_player.position);
+                if (dist < TileProgression.WhiteTileDetectRange)
+                {
+                    Vector2 away = (rb.position - (Vector2)_player.position).normalized;
+                    dir = Vector2.Lerp(dir, away, TileProgression.WhiteTileFleeStrength * Time.fixedDeltaTime).normalized;
+                }
+            }
         }
 
-        float speed = kind == TileKind.Black ? TileProgression.BlackTileChaseSpeed : TileProgression.SpecialDriftSpeed;
+        float speed = kind == TileKind.Black ? TileProgression.BlackTileChaseSpeed
+                    : kind == TileKind.White  ? TileProgression.WhiteTileFleeSpeed
+                    : TileProgression.SpecialDriftSpeed;
         Vector2 next = rb.position + dir * speed * Time.fixedDeltaTime;
 
         if (next.x <= ArenaState.MinX || next.x >= ArenaState.MaxX) { dir.x = -dir.x; next.x = Mathf.Clamp(next.x, ArenaState.MinX, ArenaState.MaxX); }
