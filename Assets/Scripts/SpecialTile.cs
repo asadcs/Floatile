@@ -28,37 +28,48 @@ public sealed class SpecialTile : MonoBehaviour
     public OperatorType Operator => operatorType;
 
     // Called by ArenaSpawner after instantiation.
-    // playerTier: used to size the tile at 2× the player's current physical size.
-    // customSprite: golden or hell artwork — rendered at true color (no tint).
+    // customSprite: golden or hell artwork — normalized to match the hero tile's world size.
     public void Init(OperatorType op, TileKind k, Sprite tileSprite, long playerTier, Sprite customSprite = null)
     {
         operatorType = op;
         kind         = k;
 
-        Color bgHint  = k == TileKind.White ? WHITE_TILE : BLACK_TILE;
-        bool  hasArt  = customSprite != null;
+        Color  bgHint = k == TileKind.White ? WHITE_TILE : BLACK_TILE;
+        bool   hasArt = customSprite != null;
         Sprite visual = hasArt ? customSprite : tileSprite;
 
         var sr = GetComponent<SpriteRenderer>();
         if (sr != null)
         {
             sr.sprite       = visual;
-            sr.color        = hasArt ? Color.white : bgHint;
             sr.sortingOrder = 1;
         }
 
+        // TileVisual.SetVisual overwrites sr.color — so set it AFTER.
         var tv = GetComponent<TileVisual>();
         if (tv != null)
             tv.SetVisual(visual, bgHint, SymbolFor(op));
 
-        // Match the player's current tile size exactly.
-        float scale = TileProgression.PhysicalSize(playerTier);
-        transform.localScale = Vector3.one * scale;
+        // Restore true color for custom art — TileVisual would have tinted it with bgHint.
+        if (sr != null)
+            sr.color = hasArt ? Color.white : bgHint;
 
-        // Resize collider to match sprite bounds so collision fires on first visual touch.
+        // Normalize scale: custom sprites have different pixel dims than tile.png.
+        // We want the rendered world size to match an NPC tile at playerTier.
+        // refDim = tile.png max local dimension; artDim = custom sprite max local dimension.
+        float baseScale = TileProgression.PhysicalSize(playerTier);
+        if (hasArt && tileSprite != null && visual != null)
+        {
+            float refDim = Mathf.Max(tileSprite.bounds.size.x, tileSprite.bounds.size.y);
+            float artDim = Mathf.Max(visual.bounds.size.x,     visual.bounds.size.y);
+            if (artDim > 0.001f) baseScale *= refDim / artDim;
+        }
+        transform.localScale = Vector3.one * baseScale;
+
+        // Collider matches the reference tile dimensions (not the custom art dimensions).
         var col2 = GetComponent<BoxCollider2D>();
-        if (col2 != null && visual != null)
-            col2.size = (Vector2)visual.bounds.size;
+        if (col2 != null)
+            col2.size = tileSprite != null ? (Vector2)tileSprite.bounds.size : Vector2.one;
 
         Destroy(gameObject, k == TileKind.Black ? TileProgression.BlackTileLifespan : TileProgression.WhiteTileLifespan);
     }
