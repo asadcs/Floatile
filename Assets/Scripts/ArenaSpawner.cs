@@ -87,6 +87,30 @@ public sealed class ArenaSpawner : MonoBehaviour
         npcs.Add(obj);
     }
 
+    // ── Dev QA helpers (dev/editor only) ─────────────────────────────────────
+
+    public void SpawnNPCAtTier(long tier)
+    {
+        if (npcPrefab == null) return;
+        Vector2 pos = new(
+            Random.Range(ArenaState.MinX + 1f, ArenaState.MaxX - 1f),
+            Random.Range(ArenaState.MinY + 1f, ArenaState.MaxY - 1f));
+        GameObject obj = Instantiate(npcPrefab, pos, Quaternion.identity);
+        var npc = obj.GetComponent<NPCDrift>();
+        if (npc != null) npc.Tier = tier;
+        npcs.Add(obj);
+    }
+
+    public void ClearAllNPCs()
+    {
+        foreach (var n in npcs)
+            if (n != null) Destroy(n);
+        npcs.Clear();
+    }
+
+    public void ForceSpawnWhite() => SpawnSpecial(SpecialTile.TileKind.White);
+    public void ForceSpawnBlack() => SpawnSpecial(SpecialTile.TileKind.Black);
+
     // Binary pyramid: AvailabilityScore uses exp(-ln(2)*P) so each tier-doubling halves weight.
     // Tier 2 is always most common regardless of player progression.
     long PickSpawnTier()

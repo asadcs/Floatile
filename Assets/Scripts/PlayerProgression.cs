@@ -120,4 +120,13 @@ public sealed class PlayerProgression : MonoBehaviour
 
     // Progress toward next tier-up [0..1], for UI progress bar fill
     public float Progress => Threshold > 0 ? (float)accumulatedPoints / Threshold : 0f;
+
+    // Dev QA only — bypasses normal progression, sets tier directly.
+    public void ForceSetTier(long tier)
+    {
+        Tier = Math.Max(2L, tier);
+        accumulatedPoints = 0;
+        ArenaState.Instance?.UpdateTier(_arenaId, Tier);
+        OnTierChanged?.Invoke(Tier);
+    }
 }
