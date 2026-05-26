@@ -18,7 +18,7 @@ public sealed class NPCDrift : MonoBehaviour
         }
     }
 
-    const float WANDER = 1.5f;  // vertical drift amplitude
+    // WANDER amplitude is P-dependent — see TileProgression.WanderScore()
 
     Rigidbody2D rb;
     TileVisual  visual;
@@ -61,16 +61,17 @@ public sealed class NPCDrift : MonoBehaviour
             return;
         }
 
-        Vector2 vel = new(baseSpeed, vertDir * WANDER);
+        float wander = TileProgression.WanderScore(tier);
+        Vector2 vel = new(baseSpeed, vertDir * wander);
 
-        // Proximity avoidance: flee if smaller than player and within range
+        // Proximity avoidance: flee if smaller than player and within influence radius
         if (playerTransform != null)
         {
             var prog = playerTransform.GetComponent<PlayerProgression>();
             if (prog != null && tier < prog.Tier)
             {
                 float dist = Vector2.Distance(rb.position, (Vector2)playerTransform.position);
-                if (dist < 3f)
+                if (dist < TileProgression.InfluenceRadius(tier))
                 {
                     Vector2 away = (rb.position - (Vector2)playerTransform.position).normalized;
                     vel += away * baseSpeed * 0.8f;

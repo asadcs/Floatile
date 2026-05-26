@@ -26,17 +26,25 @@ public sealed class ArenaSpawner : MonoBehaviour
 
         SpawnInitialNPCs();
         SpawnSpecialTiles();
+        StartCoroutine(SpawnLoop());
     }
 
-    void Update()
+    // Temporal spawn loop: interval driven by GlobalTemporalPressure — arena breathes naturally.
+    IEnumerator SpawnLoop()
     {
-        npcs.RemoveAll(n => n == null);
-        int target = TargetNPCCount();
-        while (npcs.Count < target)
-            SpawnEdgeNPC();
+        while (true)
+        {
+            npcs.RemoveAll(n => n == null);
+            if (npcs.Count < TargetNPCCount())
+                SpawnEdgeNPC();
+
+            float pressure = ArenaState.Instance != null
+                ? ArenaState.Instance.GlobalTemporalPressure : 0f;
+            yield return new WaitForSeconds(TileProgression.TargetSpawnInterval(pressure));
+        }
     }
 
-    // NPC target count shrinks as arena fills — occupancy-pressure self-balancing
+    // NPC target count shrinks as arena fills — occupancy-pressure self-balancing.
     int TargetNPCCount()
     {
         float occ = ArenaState.Instance != null ? ArenaState.Instance.OccupancyRatio : 0f;
@@ -76,8 +84,8 @@ public sealed class ArenaSpawner : MonoBehaviour
         npcs.Add(obj);
     }
 
-    // Absolute availability: tier 2 always most common, each step × exp(-AvailabilityDecay) rarer.
-    // Samples from P=1 up to P_player+2 so small tiles always exist alongside bigger ones.
+    // Binary pyramid: AvailabilityScore uses exp(-ln(2)*P) so each tier-doubling halves weight.
+    // Tier 2 is always most common regardless of player progression.
     long PickSpawnTier()
     {
         long player = playerProg != null ? playerProg.CurrentTier : 2L;
@@ -86,9 +94,8 @@ public sealed class ArenaSpawner : MonoBehaviour
         var candidates = new List<(long tier, float w)>(maxP);
         for (int p = 1; p <= maxP; p++)
         {
-            long  t = 1L << p;
-            float w = Mathf.Exp(-TileProgression.AvailabilityDecay * p);
-            candidates.Add((t, w));
+            long t = 1L << p;
+            candidates.Add((t, TileProgression.AvailabilityScore(t)));
         }
 
         float total = 0f;
