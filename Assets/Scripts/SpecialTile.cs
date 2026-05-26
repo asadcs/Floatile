@@ -55,6 +55,11 @@ public sealed class SpecialTile : MonoBehaviour
         float scale = 2f * TileProgression.PhysicalSize(playerTier);
         transform.localScale = Vector3.one * scale;
 
+        // Resize collider to match sprite bounds so collision fires on first visual touch.
+        var col2 = GetComponent<BoxCollider2D>();
+        if (col2 != null && visual != null)
+            col2.size = (Vector2)visual.bounds.size;
+
         Destroy(gameObject, k == TileKind.Black ? TileProgression.BlackTileLifespan : TileProgression.WhiteTileLifespan);
     }
 
@@ -68,7 +73,6 @@ public sealed class SpecialTile : MonoBehaviour
 
         var col = GetComponent<BoxCollider2D>();
         if (col == null) col = gameObject.AddComponent<BoxCollider2D>();
-        col.size      = Vector2.one * 0.9f;
         col.isTrigger = true;
 
         dir = UnityEngine.Random.insideUnitCircle.normalized;

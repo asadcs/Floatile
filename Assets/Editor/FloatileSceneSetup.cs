@@ -109,7 +109,7 @@ public static class FloatileSceneSetup
         rb.useFullKinematicContacts = true;
 
         var col       = p.AddComponent<BoxCollider2D>();
-        col.size      = Vector2.one;
+        col.size      = sprite != null ? (Vector2)sprite.bounds.size : Vector2.one;
         col.isTrigger = true;
 
         var tv = p.AddComponent<TileVisual>();
@@ -144,7 +144,7 @@ public static class FloatileSceneSetup
         rb.constraints  = RigidbodyConstraints2D.FreezeRotation;
 
         var col       = npc.AddComponent<BoxCollider2D>();
-        col.size      = Vector2.one;
+        col.size      = sprite != null ? (Vector2)sprite.bounds.size : Vector2.one;
         col.isTrigger = false;
 
         npc.AddComponent<TileVisual>();
