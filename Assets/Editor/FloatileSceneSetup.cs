@@ -140,8 +140,10 @@ public static class FloatileSceneSetup
         sr.sortingOrder = 1;
 
         var rb = npc.AddComponent<Rigidbody2D>();
-        rb.gravityScale = 0f;
-        rb.constraints  = RigidbodyConstraints2D.FreezeRotation;
+        rb.bodyType                 = RigidbodyType2D.Kinematic;
+        rb.gravityScale             = 0f;
+        rb.constraints              = RigidbodyConstraints2D.FreezeRotation;
+        rb.useFullKinematicContacts = true;
 
         var col       = npc.AddComponent<CircleCollider2D>();
         col.radius    = sprite != null ? sprite.bounds.size.x * 0.5f : 0.5f;

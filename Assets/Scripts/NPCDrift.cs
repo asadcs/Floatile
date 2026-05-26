@@ -19,23 +19,28 @@ public sealed class NPCDrift : MonoBehaviour
         }
     }
 
-    Rigidbody2D rb;
-    TileVisual  visual;
-    Transform   playerTransform;
-    float       baseSpeed;
-    float       wander;
-    float       vertDir;
-    float       wanderTimer;
-    int         _arenaId = -1;
+    Rigidbody2D      rb;
+    TileVisual       visual;
+    CircleCollider2D col;
+    Transform        playerTransform;
+    float            baseSpeed;
+    float            wander;
+    float            vertDir;
+    float            wanderTimer;
+    int              _arenaId = -1;
+
+    readonly Collider2D[] _overlapBuffer = new Collider2D[20];
 
     void Awake()
     {
         rb     = GetComponent<Rigidbody2D>();
         visual = GetComponent<TileVisual>();
+        col    = GetComponent<CircleCollider2D>();
 
-        rb.bodyType     = RigidbodyType2D.Dynamic;
-        rb.gravityScale = 0f;
-        rb.constraints  = RigidbodyConstraints2D.FreezeRotation;
+        rb.bodyType                 = RigidbodyType2D.Kinematic;
+        rb.gravityScale             = 0f;
+        rb.constraints              = RigidbodyConstraints2D.FreezeRotation;
+        rb.useFullKinematicContacts = true;
 
         vertDir     = Random.Range(-1f, 1f);
         wanderTimer = Random.Range(1.5f, 4f);
@@ -82,8 +87,7 @@ public sealed class NPCDrift : MonoBehaviour
             else if (prog != null &&
                      TileProgression.P(tier) >= TileProgression.P(prog.Tier) + TileProgression.PredatorMinDeltaP)
             {
-                // Chase: this NPC is ≥ PredatorMinDeltaP P-units (4×) bigger — drift toward player.
-                // Slow and heavy: player can outrun it but cannot ignore it.
+                // Chase: this NPC is >= PredatorMinDeltaP P-units bigger — drift toward player.
                 float dist       = Vector2.Distance(rb.position, (Vector2)playerTransform.position);
                 float chaseRange = TileProgression.InfluenceRadius(tier) * TileProgression.ChaseDetectFactor;
                 if (dist < chaseRange)
@@ -94,15 +98,20 @@ public sealed class NPCDrift : MonoBehaviour
             }
         }
 
+        Vector2 next = rb.position + vel * Time.fixedDeltaTime;
+
         // Vertical wall bounce
-        float nextY = rb.position.y + vel.y * Time.fixedDeltaTime;
-        if (nextY < ArenaState.MinY || nextY > ArenaState.MaxY)
+        if (next.y < ArenaState.MinY || next.y > ArenaState.MaxY)
         {
             vertDir = -vertDir;
             vel.y   = -vel.y;
+            next.y  = Mathf.Clamp(next.y, ArenaState.MinY, ArenaState.MaxY);
         }
 
-        rb.linearVelocity = vel;
+        // Hard positional separation — overrides all velocity-based movement.
+        next = ResolveOverlaps(next);
+
+        rb.MovePosition(next);
 
         wanderTimer -= Time.fixedDeltaTime;
         if (wanderTimer <= 0f)
@@ -110,5 +119,41 @@ public sealed class NPCDrift : MonoBehaviour
             vertDir     = Random.Range(-1f, 1f);
             wanderTimer = Random.Range(1.5f, 4f);
         }
+    }
+
+    // Push `pos` out of any overlapping tile colliders. Runs after velocity so it
+    // acts as a hard constraint — tiles can never end a frame inside each other.
+    Vector2 ResolveOverlaps(Vector2 pos)
+    {
+        float myR = col != null
+            ? col.radius * transform.lossyScale.x
+            : TileProgression.PhysicalSize(tier) * 0.5f;
+
+        int n = Physics2D.OverlapCircleNonAlloc(pos, myR + 1.5f, _overlapBuffer);
+        for (int i = 0; i < n; i++)
+        {
+            var other = _overlapBuffer[i];
+            if (other == null || other.gameObject == gameObject) continue;
+            // Only separate from tiles (NPC or player) — ignore walls, background, etc.
+            bool isNPC    = other.GetComponent<NPCDrift>() != null;
+            bool isPlayer = other.GetComponent<PlayerProgression>() != null;
+            if (!isNPC && !isPlayer) continue;
+
+            var   otherCircle = other as CircleCollider2D;
+            float otherR      = otherCircle != null
+                ? otherCircle.radius * other.transform.lossyScale.x
+                : TileProgression.PhysicalSize(tier) * 0.5f;
+
+            Vector2 delta   = pos - (Vector2)other.transform.position;
+            float   minDist = myR + otherR;
+            float   dist    = delta.magnitude;
+
+            if (dist < minDist)
+            {
+                Vector2 push = dist > 0.001f ? delta / dist : Vector2.right;
+                pos += push * (minDist - dist);
+            }
+        }
+        return pos;
     }
 }
