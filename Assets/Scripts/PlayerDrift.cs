@@ -46,8 +46,8 @@ public sealed class PlayerDrift : MonoBehaviour
         if (dir.sqrMagnitude > 0.01f)
         {
             Vector2 next = rb.position + dir.normalized * speed * Time.fixedDeltaTime;
-            next.x = Mathf.Clamp(next.x, ArenaState.MinX, ArenaState.MaxX);
-            next.y = Mathf.Clamp(next.y, ArenaState.MinY, ArenaState.MaxY);
+            next.x = Mathf.Clamp(next.x, ArenaState.VisibleMinX, ArenaState.VisibleMaxX);
+            next.y = Mathf.Clamp(next.y, ArenaState.VisibleMinY, ArenaState.VisibleMaxY);
             rb.MovePosition(next);
         }
     }

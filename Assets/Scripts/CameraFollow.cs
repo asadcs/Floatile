@@ -19,9 +19,14 @@ public sealed class CameraFollow : MonoBehaviour
         float target = TileProgression.TargetOrthoSize(ArenaState.Instance.GlobalCameraScore);
         cam.orthographicSize = Mathf.Lerp(cam.orthographicSize, target, Time.deltaTime * lerpSpeed);
 
-        // Publish updated bounds so spawner and drift scripts stay in sync
-        float halfH = cam.orthographicSize + spawnMargin;
-        float halfW = halfH * cam.aspect;
+        // Visible bounds — exact camera edges, used by PlayerDrift to keep player on screen.
+        float visH = cam.orthographicSize;
+        float visW = visH * cam.aspect;
+        ArenaState.SetVisibleBounds(visW, visH);
+
+        // Spawn bounds — visible + margin, used by NPCs and spawner for off-screen entry/exit.
+        float halfH = visH + spawnMargin;
+        float halfW = visW + spawnMargin;
         ArenaState.SetBounds(halfW, halfH);
     }
 

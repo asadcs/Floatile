@@ -149,12 +149,13 @@ public sealed class TileVisual : MonoBehaviour
 
     public static string FormatNumber(long value)
     {
-        if (value < 1_000L)                 return value.ToString();
-        if (value < 1_000_000L)             return Suffix(value, 1_000L,                 "K");
-        if (value < 1_000_000_000L)         return Suffix(value, 1_000_000L,             "M");
-        if (value < 1_000_000_000_000L)     return Suffix(value, 1_000_000_000L,         "B");
-        if (value < 1_000_000_000_000_000L) return Suffix(value, 1_000_000_000_000L,     "T");
-        return                                     Suffix(value, 1_000_000_000_000_000L, "Qa");
+        if (value < 1_000L)                       return value.ToString();
+        if (value < 1_000_000L)                   return Suffix(value, 1_000L,                     "K");
+        if (value < 1_000_000_000L)               return Suffix(value, 1_000_000L,                 "M");
+        if (value < 1_000_000_000_000L)           return Suffix(value, 1_000_000_000L,             "B");
+        if (value < 1_000_000_000_000_000L)       return Suffix(value, 1_000_000_000_000L,         "T");
+        if (value < 1_000_000_000_000_000_000L)   return Suffix(value, 1_000_000_000_000_000L,     "Qa");
+        return                                            Suffix(value, 1_000_000_000_000_000_000L, "Qi");
     }
 
     static string Suffix(long value, long divisor, string suffix)
