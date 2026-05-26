@@ -2,14 +2,14 @@ using UnityEngine;
 
 public sealed class PlayerDrift : MonoBehaviour
 {
-    [SerializeField] private float speed = 20f;
-
     // Set by UIManager D-pad buttons; accumulated while buttons are held
     public Vector2 ExternalInput { get; set; }
 
+    float speed = 20f;  // updated by TileProgression.PlayerSpeed() when tier changes
 
     private Rigidbody2D rb;
     private Camera      mainCam;
+    PlayerProgression   progression;
 
     private void Awake()
     {
@@ -33,6 +33,13 @@ public sealed class PlayerDrift : MonoBehaviour
     {
         rb.position = Vector2.zero;
         mainCam     = Camera.main;
+
+        progression = GetComponent<PlayerProgression>();
+        if (progression != null)
+        {
+            speed = TileProgression.PlayerSpeed(progression.Tier);
+            progression.OnTierChanged += t => speed = TileProgression.PlayerSpeed(t);
+        }
     }
 
     private void FixedUpdate()

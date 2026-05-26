@@ -34,6 +34,10 @@ public static class TileProgression
     public static float SpawnIntervalScale       = 2.0f;   // max additional seconds at full pressure
     public static float SpawnIntervalSensitivity = 0.3f;
 
+    public static float PlayerSpeedBase      = 5.0f;   // player speed floor at max tier
+    public static float PlayerSpeedRange     = 15.0f;  // speed range (added to base at tier 2)
+    public static float PlayerSpeedDecay     = 0.10f;  // decay per P unit (gentler than NPC)
+
     public static float AvoidanceMinRadius   = 2.0f;  // floor for NPC flee detection range
     public static float InvincibilityDuration = 1.5f; // post-penalty invincibility window (seconds)
     public static float SpecialDriftSpeed    = 0.5f;  // special tile movement speed
@@ -64,6 +68,11 @@ public static class TileProgression
     // SPEED — exponential decay: tier-2 tiles dart (2.5 u/s), high-tier drift (≈0.5 u/s).
     public static float NpcSpeed(long v)
         => SpeedBase + SpeedRange * Mathf.Exp(-SpeedDecay * P(v));
+
+    // PLAYER SPEED — exponential decay mirroring NPC but gentler; large player feels heavy not sluggish.
+    // tier 2: 18.6 u/s  |  tier 1K: 10.5 u/s  |  tier 1M: 7.0 u/s
+    public static float PlayerSpeed(long v)
+        => PlayerSpeedBase + PlayerSpeedRange * Mathf.Exp(-PlayerSpeedDecay * P(v));
 
     // WANDER — vertical drift amplitude; small tiles dart chaotically, large tiles drift calmly.
     // tier 2: 2.5  |  tier 64: 1.1  |  tier 4K: 0.44
