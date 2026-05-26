@@ -3,6 +3,11 @@ using UnityEngine;
 public static class TileProgression
 {
     // ── Tuning (all public static — override from a config component if needed) ─
+    // Collision circle = sprite.bounds.x * ColliderRadiusFraction.
+    // 0.35 ≈ 70% of sprite diameter — matches solid tile core, excludes glow/shadow border.
+    // Raise toward 0.5 if collisions feel too "close"; lower if tiles still phantom-trigger.
+    public static float ColliderRadiusFraction = 0.35f;
+
     public static float SizeMin             = 0.20f;
     public static float SizeMax             = 1.50f;
     public static float SizePivot           = 12f;   // P where physical size is at midpoint

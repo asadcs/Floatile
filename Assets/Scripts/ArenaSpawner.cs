@@ -80,25 +80,44 @@ public sealed class ArenaSpawner : MonoBehaviour
     void SpawnInteriorNPC()
     {
         if (npcPrefab == null) return;
-        Vector2 pos = new(
-            Random.Range(ArenaState.MinX + 1f, ArenaState.MaxX - 1f),
-            Random.Range(ArenaState.MinY + 1f, ArenaState.MaxY - 1f));
-        SpawnNPC(pos);
+        long  tier   = PickSpawnTier();
+        float checkR = TileProgression.PhysicalSize(tier);
+        for (int attempt = 0; attempt < 10; attempt++)
+        {
+            var pos = new Vector2(
+                Random.Range(ArenaState.MinX + checkR + 0.5f, ArenaState.MaxX - checkR - 0.5f),
+                Random.Range(ArenaState.MinY + checkR + 0.5f, ArenaState.MaxY - checkR - 0.5f));
+            if (Physics2D.OverlapCircle(pos, checkR * 0.9f) == null)
+            {
+                SpawnNPC(pos, tier);
+                return;
+            }
+        }
     }
 
     void SpawnEdgeNPC()
     {
         if (npcPrefab == null) return;
-        Vector2 pos = new(ArenaState.MinX, Random.Range(ArenaState.MinY + 1f, ArenaState.MaxY - 1f));
-        SpawnNPC(pos);
+        long  tier   = PickSpawnTier();
+        float checkR = TileProgression.PhysicalSize(tier);
+        for (int attempt = 0; attempt < 10; attempt++)
+        {
+            float y = Random.Range(ArenaState.MinY + checkR + 0.5f, ArenaState.MaxY - checkR - 0.5f);
+            var   pos = new Vector2(ArenaState.MinX + checkR, y);
+            if (Physics2D.OverlapCircle(pos, checkR * 0.9f) == null)
+            {
+                SpawnNPC(pos, tier);
+                return;
+            }
+        }
     }
 
-    void SpawnNPC(Vector2 pos)
+    void SpawnNPC(Vector2 pos, long tier = 0)
     {
+        if (tier == 0) tier = PickSpawnTier();
         GameObject obj = Instantiate(npcPrefab, pos, Quaternion.identity);
         var npc = obj.GetComponent<NPCDrift>();
-        if (npc != null)
-            npc.Tier = PickSpawnTier();
+        if (npc != null) npc.Tier = tier;
         npcs.Add(obj);
     }
 
@@ -107,13 +126,18 @@ public sealed class ArenaSpawner : MonoBehaviour
     public void SpawnNPCAtTier(long tier)
     {
         if (npcPrefab == null) return;
-        Vector2 pos = new(
-            Random.Range(ArenaState.MinX + 1f, ArenaState.MaxX - 1f),
-            Random.Range(ArenaState.MinY + 1f, ArenaState.MaxY - 1f));
-        GameObject obj = Instantiate(npcPrefab, pos, Quaternion.identity);
-        var npc = obj.GetComponent<NPCDrift>();
-        if (npc != null) npc.Tier = tier;
-        npcs.Add(obj);
+        float checkR = TileProgression.PhysicalSize(tier);
+        for (int attempt = 0; attempt < 10; attempt++)
+        {
+            var pos = new Vector2(
+                Random.Range(ArenaState.MinX + checkR + 0.5f, ArenaState.MaxX - checkR - 0.5f),
+                Random.Range(ArenaState.MinY + checkR + 0.5f, ArenaState.MaxY - checkR - 0.5f));
+            if (Physics2D.OverlapCircle(pos, checkR * 0.9f) == null)
+            {
+                SpawnNPC(pos, tier);
+                return;
+            }
+        }
     }
 
     public void ClearAllNPCs()

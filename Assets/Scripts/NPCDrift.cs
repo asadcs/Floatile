@@ -123,18 +123,22 @@ public sealed class NPCDrift : MonoBehaviour
 
     // Push `pos` out of any overlapping tile colliders. Runs after velocity so it
     // acts as a hard constraint — tiles can never end a frame inside each other.
+    // Parallel correction: accumulate ALL push vectors before applying so 3+ tile
+    // clusters resolve correctly (sequential would corrupt later iterations).
     Vector2 ResolveOverlaps(Vector2 pos)
     {
         float myR = col != null
             ? col.radius * transform.lossyScale.x
             : TileProgression.PhysicalSize(tier) * 0.5f;
 
-        int n = Physics2D.OverlapCircleNonAlloc(pos, myR + 1.5f, _overlapBuffer);
+        float queryR = myR + TileProgression.SizeMax + 0.2f;
+        int   n      = Physics2D.OverlapCircleNonAlloc(pos, queryR, _overlapBuffer);
+
+        Vector2 correction = Vector2.zero;
         for (int i = 0; i < n; i++)
         {
             var other = _overlapBuffer[i];
             if (other == null || other.gameObject == gameObject) continue;
-            // Only separate from tiles (NPC or player) — ignore walls, background, etc.
             bool isNPC    = other.GetComponent<NPCDrift>() != null;
             bool isPlayer = other.GetComponent<PlayerProgression>() != null;
             if (!isNPC && !isPlayer) continue;
@@ -150,10 +154,16 @@ public sealed class NPCDrift : MonoBehaviour
 
             if (dist < minDist)
             {
-                Vector2 push = dist > 0.001f ? delta / dist : Vector2.right;
-                pos += push * (minDist - dist);
+                Vector2 dir = dist > 0.001f ? delta / dist : RandomDir();
+                correction += dir * (minDist - dist);
             }
         }
-        return pos;
+        return pos + correction;
+    }
+
+    static Vector2 RandomDir()
+    {
+        float a = Random.Range(0f, Mathf.PI * 2f);
+        return new Vector2(Mathf.Cos(a), Mathf.Sin(a));
     }
 }

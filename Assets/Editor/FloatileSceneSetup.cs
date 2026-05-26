@@ -109,7 +109,7 @@ public static class FloatileSceneSetup
         rb.useFullKinematicContacts = true;
 
         var col       = p.AddComponent<CircleCollider2D>();
-        col.radius    = sprite != null ? sprite.bounds.size.x * 0.5f : 0.5f;
+        col.radius    = sprite != null ? sprite.bounds.size.x * TileProgression.ColliderRadiusFraction : 0.4f;
         col.isTrigger = true;
 
         var tv = p.AddComponent<TileVisual>();
@@ -146,7 +146,7 @@ public static class FloatileSceneSetup
         rb.useFullKinematicContacts = true;
 
         var col       = npc.AddComponent<CircleCollider2D>();
-        col.radius    = sprite != null ? sprite.bounds.size.x * 0.5f : 0.5f;
+        col.radius    = sprite != null ? sprite.bounds.size.x * TileProgression.ColliderRadiusFraction : 0.4f;
         col.isTrigger = false;
 
         npc.AddComponent<TileVisual>();
@@ -172,7 +172,7 @@ public static class FloatileSceneSetup
 
         st.AddComponent<Rigidbody2D>();
         var col       = st.AddComponent<CircleCollider2D>();
-        col.radius    = 0.45f;  // 0.9 diameter in local space; localScale handles world sizing
+        col.radius    = sprite != null ? sprite.bounds.size.x * TileProgression.ColliderRadiusFraction : 0.4f;
         col.isTrigger = true;
 
         st.AddComponent<TileVisual>();

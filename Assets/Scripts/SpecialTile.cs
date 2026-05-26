@@ -66,10 +66,10 @@ public sealed class SpecialTile : MonoBehaviour
         }
         transform.localScale = Vector3.one * baseScale;
 
-        // Collider radius matches reference tile's local half-size; localScale handles world sizing.
+        // Collider radius = solid tile core (excludes glow border); localScale handles world sizing.
         var col2 = GetComponent<CircleCollider2D>();
         if (col2 != null)
-            col2.radius = tileSprite != null ? tileSprite.bounds.size.x * 0.5f : 0.5f;
+            col2.radius = tileSprite != null ? tileSprite.bounds.size.x * TileProgression.ColliderRadiusFraction : 0.4f;
 
         Destroy(gameObject, k == TileKind.Black ? TileProgression.BlackTileLifespan : TileProgression.WhiteTileLifespan);
     }
