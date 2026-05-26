@@ -108,8 +108,8 @@ public static class FloatileSceneSetup
         rb.constraints              = RigidbodyConstraints2D.FreezeRotation;
         rb.useFullKinematicContacts = true;
 
-        var col       = p.AddComponent<BoxCollider2D>();
-        col.size      = sprite != null ? (Vector2)sprite.bounds.size : Vector2.one;
+        var col       = p.AddComponent<CircleCollider2D>();
+        col.radius    = sprite != null ? sprite.bounds.size.x * 0.5f : 0.5f;
         col.isTrigger = true;
 
         var tv = p.AddComponent<TileVisual>();
@@ -143,8 +143,8 @@ public static class FloatileSceneSetup
         rb.gravityScale = 0f;
         rb.constraints  = RigidbodyConstraints2D.FreezeRotation;
 
-        var col       = npc.AddComponent<BoxCollider2D>();
-        col.size      = sprite != null ? (Vector2)sprite.bounds.size : Vector2.one;
+        var col       = npc.AddComponent<CircleCollider2D>();
+        col.radius    = sprite != null ? sprite.bounds.size.x * 0.5f : 0.5f;
         col.isTrigger = false;
 
         npc.AddComponent<TileVisual>();
@@ -169,8 +169,8 @@ public static class FloatileSceneSetup
         sr.sortingOrder = 2;
 
         st.AddComponent<Rigidbody2D>();
-        var col = st.AddComponent<BoxCollider2D>();
-        col.size      = Vector2.one * 0.9f;
+        var col       = st.AddComponent<CircleCollider2D>();
+        col.radius    = 0.45f;  // 0.9 diameter in local space; localScale handles world sizing
         col.isTrigger = true;
 
         st.AddComponent<TileVisual>();
@@ -281,6 +281,11 @@ public static class FloatileSceneSetup
         CameraFollow follow = cam.GetComponent<CameraFollow>();
         if (follow != null) Object.DestroyImmediate(follow);
         cam.gameObject.AddComponent<CameraFollow>();
+
+        // ScreenShake singleton lives on the camera
+        ScreenShake shake = cam.GetComponent<ScreenShake>();
+        if (shake != null) Object.DestroyImmediate(shake);
+        cam.gameObject.AddComponent<ScreenShake>();
     }
 
     static void WireCameraFollow(GameObject player)

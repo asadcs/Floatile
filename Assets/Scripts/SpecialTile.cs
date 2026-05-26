@@ -66,10 +66,10 @@ public sealed class SpecialTile : MonoBehaviour
         }
         transform.localScale = Vector3.one * baseScale;
 
-        // Collider matches the reference tile dimensions (not the custom art dimensions).
-        var col2 = GetComponent<BoxCollider2D>();
+        // Collider radius matches reference tile's local half-size; localScale handles world sizing.
+        var col2 = GetComponent<CircleCollider2D>();
         if (col2 != null)
-            col2.size = tileSprite != null ? (Vector2)tileSprite.bounds.size : Vector2.one;
+            col2.radius = tileSprite != null ? tileSprite.bounds.size.x * 0.5f : 0.5f;
 
         Destroy(gameObject, k == TileKind.Black ? TileProgression.BlackTileLifespan : TileProgression.WhiteTileLifespan);
     }

@@ -34,14 +34,33 @@ public sealed class CollisionFX : MonoBehaviour
         _eat.OnSpecialCollect -= HandleSpecial;
     }
 
-    void HandleEat(long _)    => Animate(PunchRoutine(0.22f, 0.13f));
-    void HandleEvolve(long _) => Animate(SpringRoutine(0.50f, 0.28f));
-    void HandleSpecial(SpecialTile _) => Animate(PunchRoutine(0.38f, 0.20f));
+    void HandleEat(long enemyTier)
+    {
+        Animate(PunchRoutine(0.22f, 0.13f));
+        SpawnSparks(transform.position, TierColorTable.ForTier(enemyTier), 8);
+        ScreenShake.Instance?.Shake(0.06f, 0.08f);
+    }
+
+    void HandleEvolve(long newTier)
+    {
+        Animate(SpringRoutine(0.50f, 0.28f));
+        SpawnSparks(transform.position, TierColorTable.ForTier(newTier), 18);
+        ScreenShake.Instance?.Shake(0.13f, 0.20f);
+    }
+
+    void HandleSpecial(SpecialTile _)
+    {
+        Animate(PunchRoutine(0.38f, 0.20f));
+        SpawnSparks(transform.position, new Color(1f, 0.92f, 0.2f), 14); // gold burst
+        ScreenShake.Instance?.Shake(0.10f, 0.14f);
+    }
 
     void HandlePenalty(long _)
     {
         Animate(SquashRoutine(0.26f));
         StartCoroutine(FlashRoutine(Color.white, 0.18f));
+        SpawnSparks(transform.position, new Color(1f, 0.25f, 0.1f), 24); // hot red-orange
+        ScreenShake.Instance?.Shake(0.22f, 0.35f);
     }
 
     // Cancel any running scale animation and start a new one from a clean base.
@@ -156,4 +175,33 @@ public sealed class CollisionFX : MonoBehaviour
     }
 
     static float Smooth(float t) => Mathf.SmoothStep(0f, 1f, t);
+
+    static void SpawnSparks(Vector3 pos, Color color, int count)
+    {
+        var go = new GameObject("[Sparks]");
+        go.transform.position = pos;
+
+        var ps  = go.AddComponent<ParticleSystem>();
+        var psr = go.GetComponent<ParticleSystemRenderer>();
+        psr.sortingOrder = 10;
+
+        var main             = ps.main;
+        main.loop            = false;
+        main.startLifetime   = new ParticleSystem.MinMaxCurve(0.25f, 0.55f);
+        main.startSpeed      = new ParticleSystem.MinMaxCurve(3f, 9f);
+        main.startSize       = new ParticleSystem.MinMaxCurve(0.05f, 0.16f);
+        main.startColor      = color;
+        main.gravityModifier = 0.25f;
+        main.simulationSpace = ParticleSystemSimulationSpace.World;
+
+        var emission = ps.emission;
+        emission.rateOverTime = 0;
+        emission.SetBursts(new[] { new ParticleSystem.Burst(0f, (short)count) });
+
+        var shape        = ps.shape;
+        shape.shapeType  = ParticleSystemShapeType.Circle;
+        shape.radius     = 0.15f;
+
+        Destroy(go, 1.5f);
+    }
 }
