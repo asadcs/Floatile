@@ -17,6 +17,7 @@ public sealed class GameManager : MonoBehaviour
     {
         CurrentState     = State.Playing;
         Time.timeScale   = 1f;
+        CrazyGamesManager.Instance?.NotifyGameplayStart();
     }
 
     public void Pause()

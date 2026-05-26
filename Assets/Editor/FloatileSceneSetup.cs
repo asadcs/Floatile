@@ -80,6 +80,7 @@ public static class FloatileSceneSetup
     {
         GameObject go = new("GameManager");
         go.AddComponent<GameManager>();
+        go.AddComponent<CrazyGamesManager>();
         EditorUtility.SetDirty(go);
     }
 
