@@ -7,8 +7,6 @@ public sealed class ArenaSpawner : MonoBehaviour
     [SerializeField] private GameObject npcPrefab;
     [SerializeField] private GameObject specialTilePrefab;
     [SerializeField] private Sprite     tileSprite;
-    [SerializeField] private Sprite     goldenSprite;   // golden tile art for white (benefit) tiles
-    [SerializeField] private Sprite     hellSprite;     // hell tile art for black (threat) tiles
 
     [SerializeField] private int maxNPCs = 15;
     [SerializeField] private int minNPCs = 5;
@@ -20,11 +18,16 @@ public sealed class ArenaSpawner : MonoBehaviour
     List<GameObject> npcs = new();
 
     PlayerProgression playerProg;
+    Sprite            goldenSprite;
+    Sprite            hellSprite;
 
     void Start()
     {
         var player = GameObject.FindWithTag("Player");
         if (player != null) playerProg = player.GetComponent<PlayerProgression>();
+
+        goldenSprite = Resources.Load<Sprite>("golden_tile");
+        hellSprite   = Resources.Load<Sprite>("hell_tile");
 
         SpawnInitialNPCs();
         SpawnSpecialTiles();

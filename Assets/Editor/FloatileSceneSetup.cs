@@ -189,15 +189,10 @@ public static class FloatileSceneSetup
         GameObject go = new("ArenaSpawner");
         var spawner = go.AddComponent<ArenaSpawner>();
 
-        Sprite golden = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Sprites/golden_tile.png");
-        Sprite hell   = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Sprites/hell_tile.png");
-
         SerializedObject so = new(spawner);
         so.FindProperty("npcPrefab").objectReferenceValue         = npcPrefab;
         so.FindProperty("specialTilePrefab").objectReferenceValue = specialPrefab;
         so.FindProperty("tileSprite").objectReferenceValue        = sprite;
-        so.FindProperty("goldenSprite").objectReferenceValue      = golden;
-        so.FindProperty("hellSprite").objectReferenceValue        = hell;
         so.ApplyModifiedPropertiesWithoutUndo();
 
         EditorUtility.SetDirty(spawner);
