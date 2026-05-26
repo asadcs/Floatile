@@ -8,8 +8,8 @@ public sealed class ArenaSpawner : MonoBehaviour
     [SerializeField] private GameObject specialTilePrefab;
     [SerializeField] private Sprite     tileSprite;
 
-    [SerializeField] private int maxNPCs = 10;
-    [SerializeField] private int minNPCs = 3;
+    [SerializeField] private int maxNPCs = 15;
+    [SerializeField] private int minNPCs = 5;
 
     const int   MAX_WHITE       = 1;
     const int   MAX_BLACK       = 1;
@@ -30,12 +30,15 @@ public sealed class ArenaSpawner : MonoBehaviour
     }
 
     // Temporal spawn loop: interval driven by GlobalTemporalPressure — arena breathes naturally.
+    // Spawns up to 2 tiles per tick when the deficit is large so eating never empties the arena.
     IEnumerator SpawnLoop()
     {
         while (true)
         {
             npcs.RemoveAll(n => n == null);
-            if (npcs.Count < TargetNPCCount())
+            int deficit = TargetNPCCount() - npcs.Count;
+            int batch   = Mathf.Clamp(deficit, 0, 2);
+            for (int i = 0; i < batch; i++)
                 SpawnEdgeNPC();
 
             float pressure = ArenaState.Instance != null

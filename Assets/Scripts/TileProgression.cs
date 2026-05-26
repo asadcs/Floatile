@@ -30,8 +30,8 @@ public static class TileProgression
     public static float DominancePivot      = 15f;
     public static float DominancePower      = 1.5f;
 
-    public static float SpawnIntervalBase        = 0.5f;   // seconds between spawns at zero pressure
-    public static float SpawnIntervalScale       = 8.0f;   // max additional seconds at full pressure
+    public static float SpawnIntervalBase        = 0.3f;   // seconds between spawns at zero pressure
+    public static float SpawnIntervalScale       = 2.0f;   // max additional seconds at full pressure
     public static float SpawnIntervalSensitivity = 0.3f;
 
     public static float AvoidanceMinRadius   = 2.0f;  // floor for NPC flee detection range
