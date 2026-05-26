@@ -28,9 +28,9 @@ public sealed class SpecialTile : MonoBehaviour
     public OperatorType Operator => operatorType;
 
     // Called by ArenaSpawner after instantiation.
-    // customSprite: golden or hell artwork. When provided, sr.color stays white so the artwork
-    // renders true-to-art; bgHint drives label luminance in TileVisual instead.
-    public void Init(OperatorType op, TileKind k, Sprite tileSprite, Sprite customSprite = null)
+    // playerTier: used to size the tile at 2× the player's current physical size.
+    // customSprite: golden or hell artwork — rendered at true color (no tint).
+    public void Init(OperatorType op, TileKind k, Sprite tileSprite, long playerTier, Sprite customSprite = null)
     {
         operatorType = op;
         kind         = k;
@@ -43,16 +43,16 @@ public sealed class SpecialTile : MonoBehaviour
         if (sr != null)
         {
             sr.sprite       = visual;
-            sr.color        = hasArt ? Color.white : bgHint;  // don't tint custom artwork
+            sr.color        = hasArt ? Color.white : bgHint;
             sr.sortingOrder = 1;
         }
 
         var tv = GetComponent<TileVisual>();
         if (tv != null)
-            tv.SetVisual(visual, bgHint, SymbolFor(op));  // bgHint drives label luminance
+            tv.SetVisual(visual, bgHint, SymbolFor(op));
 
-        float scale = TileProgression.SpecialTileScale();
-        if (k == TileKind.Black) scale *= TileProgression.BlackTileScaleMultiplier;
+        // Always 2× the player's current tile size so both kinds feel significant.
+        float scale = 2f * TileProgression.PhysicalSize(playerTier);
         transform.localScale = Vector3.one * scale;
 
         Destroy(gameObject, k == TileKind.Black ? TileProgression.BlackTileLifespan : TileProgression.WhiteTileLifespan);

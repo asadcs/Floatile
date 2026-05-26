@@ -202,6 +202,6 @@ public sealed class ArenaSpawner : MonoBehaviour
         GameObject obj = Instantiate(specialTilePrefab, pos, Quaternion.identity);
         var st = obj.GetComponent<SpecialTile>();
         Sprite art = kind == SpecialTile.TileKind.White ? goldenSprite : hellSprite;
-        st?.Init(op, kind, tileSprite, art);
+        st?.Init(op, kind, tileSprite, p, art);
     }
 }
