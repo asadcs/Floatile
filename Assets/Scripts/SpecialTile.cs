@@ -51,8 +51,8 @@ public sealed class SpecialTile : MonoBehaviour
         if (tv != null)
             tv.SetVisual(visual, bgHint, SymbolFor(op));
 
-        // Always 2× the player's current tile size so both kinds feel significant.
-        float scale = 2f * TileProgression.PhysicalSize(playerTier);
+        // Match the player's current tile size exactly.
+        float scale = TileProgression.PhysicalSize(playerTier);
         transform.localScale = Vector3.one * scale;
 
         // Resize collider to match sprite bounds so collision fires on first visual touch.

@@ -21,13 +21,23 @@ public sealed class ArenaSpawner : MonoBehaviour
     Sprite            goldenSprite;
     Sprite            hellSprite;
 
+    // Resources.Load<Sprite> fails when texture is imported as Multiple sprites.
+    // Loading as Texture2D + Sprite.Create always works regardless of import settings.
+    static Sprite LoadSprite(string resourceName)
+    {
+        var tex = Resources.Load<Texture2D>(resourceName);
+        if (tex == null) return null;
+        return Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height),
+                             new Vector2(0.5f, 0.5f), 100f);
+    }
+
     void Start()
     {
         var player = GameObject.FindWithTag("Player");
         if (player != null) playerProg = player.GetComponent<PlayerProgression>();
 
-        goldenSprite = Resources.Load<Sprite>("golden_tile");
-        hellSprite   = Resources.Load<Sprite>("hell_tile");
+        goldenSprite = LoadSprite("golden_tile");
+        hellSprite   = LoadSprite("hell_tile");
 
         SpawnInitialNPCs();
         SpawnSpecialTiles();
