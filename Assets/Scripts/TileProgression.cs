@@ -3,10 +3,16 @@ using UnityEngine;
 public static class TileProgression
 {
     // ── Tuning (all public static — override from a config component if needed) ─
-    // Collision circle = sprite.bounds.x * ColliderRadiusFraction.
-    // 0.35 ≈ 70% of sprite diameter — matches solid tile core, excludes glow/shadow border.
-    // Raise toward 0.5 if collisions feel too "close"; lower if tiles still phantom-trigger.
-    public static float ColliderRadiusFraction = 0.35f;
+    // Collision circle = min(sprite width, sprite height) * ColliderRadiusFraction.
+    // The tile art has horizontal padding/shadow, so using width makes hits fire too early.
+    public static float ColliderRadiusFraction = 0.50f;
+
+    public static float CollisionRadius(Sprite sprite)
+    {
+        if (sprite == null) return 0.4f;
+        float bodyDim = Mathf.Min(sprite.bounds.size.x, sprite.bounds.size.y);
+        return bodyDim * ColliderRadiusFraction;
+    }
 
     public static float SizeMin             = 0.20f;
     public static float SizeMax             = 1.50f;
@@ -59,6 +65,21 @@ public static class TileProgression
     public static float WhiteTileFleeSpeed     = 3.5f;  // white tile escape speed (u/s) — fast and elusive
     public static float WhiteTileFleeStrength  = 4.0f;  // turn rate away from player (rad/s approx)
     public static float WhiteTileDetectRange   = 8.0f;  // radius within which white tile notices player
+
+    // ── Spawn system ──────────────────────────────────────────────────────────
+    public static long  EarlyGameMaxH           = 32L;    // H ≤ this → early stage weights
+    public static long  LateGameMinH            = 1024L;  // H ≥ this → late stage weights
+    public static float SpecialGoldenChance     = 0.02f;  // 2% per spawn decision
+    public static float SpecialHellChance       = 0.01f;  // 1% per spawn decision
+    public static float GoldenCooldownMin       = 15f;    // seconds between golden tiles
+    public static float GoldenCooldownMax       = 25f;
+    public static float HellCooldownMin         = 20f;    // seconds between hell tiles
+    public static float HellCooldownMax         = 35f;
+    public static int   DirectorHRecentLimit    = 6;      // spawns before forcing H if absent
+    public static float DirectorDangerLimit     = 0.35f;  // danger fraction threshold for Rule 4
+    public static int   DirectorRecoverySpawns  = 3;      // spawns in recovery mode after penalty
+    public static int   DirectorMaxDangerStreak = 2;      // max consecutive danger spawns (Rule 1)
+    public static int   DirectorMaxSameStreak   = 2;      // max consecutive same-value spawns (Rule 2)
 
     // ── Core progression value ────────────────────────────────────────────────
     // P = log2(tier): tier 2→1, tier 4→2, tier 8→3, tier 1K→10, tier 1M→20 ...
