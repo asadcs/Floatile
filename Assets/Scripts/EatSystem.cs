@@ -11,6 +11,8 @@ public sealed class EatSystem : MonoBehaviour
     public event Action<SpecialTile>   OnSpecialCollect;
 
 
+    public Vector2 LastEatPos { get; private set; }
+
     bool invincible;
     PlayerProgression progression;
     TileVisual        visual;
@@ -65,7 +67,7 @@ public sealed class EatSystem : MonoBehaviour
         {
             progression.ApplySpecialEffect(special.Operator);
             OnSpecialCollect?.Invoke(special);
-            CollisionFX.PopThenDestroy(other.gameObject, this);
+            CollisionFX.FlashPopDestroy(other.gameObject, this);
             return true;
         }
 
@@ -78,16 +80,19 @@ public sealed class EatSystem : MonoBehaviour
 
         if (playerTier > enemyTier)
         {
+            LastEatPos = other.transform.position;
             progression.AddPoints(enemyTier);
             OnEat?.Invoke(enemyTier);
-            CollisionFX.PopThenDestroy(other.gameObject, this);
+            StartCoroutine(CollisionFX.HitFreeze(0.016f));
+            CollisionFX.FlashPopDestroy(other.gameObject, this);
             return true;
         }
         else if (playerTier == enemyTier)
         {
             progression.EvolveInstant();
             OnEvolve?.Invoke(progression.Tier);
-            CollisionFX.PopThenDestroy(other.gameObject, this);
+            StartCoroutine(CollisionFX.HitFreeze(0.05f));
+            CollisionFX.FlashPopDestroy(other.gameObject, this);
             return true;
         }
         else

@@ -38,7 +38,8 @@ public sealed class CollisionFX : MonoBehaviour
     {
         Animate(PunchRoutine(0.28f, 0.14f));
         Color c = TierColorTable.ForTier(enemyTier);
-        SpawnSparks(transform.position, c, 12, SparkShape.Directional);
+        Vector3 npcPos = _eat != null ? (Vector3)_eat.LastEatPos : transform.position;
+        SpawnSparks(npcPos, c, 12, SparkShape.Directional);
         StartCoroutine(ShockwaveRoutine(0.22f, 1.8f, c, 0.6f));
         ScreenShake.Instance?.Shake(0.07f, 0.10f);
     }
@@ -79,6 +80,45 @@ public sealed class CollisionFX : MonoBehaviour
     {
         if (go == null) return;
         runner.StartCoroutine(PopRoutine(go));
+    }
+
+    // 2-frame white flash then scale-pop then destroy.
+    public static void FlashPopDestroy(GameObject go, MonoBehaviour runner)
+    {
+        if (go == null) return;
+        runner.StartCoroutine(FlashPopRoutine(go));
+    }
+
+    static IEnumerator FlashPopRoutine(GameObject go)
+    {
+        if (go == null) yield break;
+        var sr = go.GetComponent<SpriteRenderer>();
+        if (sr != null) { sr.color = Color.white; yield return null; yield return null; }
+        if (go == null) yield break;
+        Vector3 start = go.transform.localScale;
+        float t = 0f;
+        while (t < 0.08f)
+        {
+            if (go == null) yield break;
+            go.transform.localScale = Vector3.LerpUnclamped(start, start * 1.30f, Smooth(t / 0.08f));
+            t += Time.deltaTime;
+            yield return null;
+        }
+        if (go != null) Object.Destroy(go);
+    }
+
+    // Vlambeer hitstop: pause world time for `duration` unscaled seconds.
+    // Brain uses the gap to register the impact without consciously noticing it.
+    public static IEnumerator HitFreeze(float duration)
+    {
+        Time.timeScale = 0f;
+        float t = 0f;
+        while (t < duration)
+        {
+            t += Time.unscaledDeltaTime;
+            yield return null;
+        }
+        Time.timeScale = 1f;
     }
 
     static IEnumerator PopRoutine(GameObject go)
