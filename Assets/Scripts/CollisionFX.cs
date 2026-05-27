@@ -38,7 +38,7 @@ public sealed class CollisionFX : MonoBehaviour
     {
         Animate(PunchRoutine(0.28f, 0.14f));
         Color c = TierColorTable.ForTier(enemyTier);
-        SpawnSparks(transform.position, c, 12);
+        SpawnSparks(transform.position, c, 12, SparkShape.Directional);
         StartCoroutine(ShockwaveRoutine(0.22f, 1.8f, c, 0.6f));
         ScreenShake.Instance?.Shake(0.07f, 0.10f);
     }
@@ -47,7 +47,7 @@ public sealed class CollisionFX : MonoBehaviour
     {
         Animate(SpringRoutine(0.55f, 0.32f));
         Color c = TierColorTable.ForTier(newTier);
-        SpawnSparks(transform.position, c, 26);
+        SpawnSparks(transform.position, c, 26, SparkShape.Ring);
         StartCoroutine(ShockwaveRoutine(0.40f, 2.5f, c, 0.8f));
         ScreenShake.Instance?.Shake(0.15f, 0.22f);
     }
@@ -56,7 +56,7 @@ public sealed class CollisionFX : MonoBehaviour
     {
         Animate(PunchRoutine(0.42f, 0.22f));
         Color gold = new Color(1f, 0.88f, 0.15f);
-        SpawnSparks(transform.position, gold, 20);
+        SpawnSparks(transform.position, gold, 20, SparkShape.Arc);
         StartCoroutine(ShockwaveRoutine(0.30f, 2.0f, gold, 0.7f));
         ScreenShake.Instance?.Shake(0.11f, 0.16f);
     }
@@ -66,9 +66,35 @@ public sealed class CollisionFX : MonoBehaviour
         Animate(SquashRoutine(0.28f));
         StartCoroutine(FlashRoutine(Color.white, 0.18f));
         Color red = new Color(1f, 0.18f, 0.08f);
-        SpawnSparks(transform.position, red, 32);
+        SpawnSparks(transform.position, red, 32, SparkShape.Explosion);
         StartCoroutine(ShockwaveRoutine(0.28f, 2.2f, red, 0.9f));
         ScreenShake.Instance?.Shake(0.25f, 0.40f);
+    }
+
+    // ── Consumed tile death pop ───────────────────────────────────────────────
+    // Called by EatSystem instead of bare Destroy(). The tile briefly punches
+    // out then vanishes, giving each eat a physical "pop" feel.
+
+    public static void PopThenDestroy(GameObject go, MonoBehaviour runner)
+    {
+        if (go == null) return;
+        runner.StartCoroutine(PopRoutine(go));
+    }
+
+    static IEnumerator PopRoutine(GameObject go)
+    {
+        if (go == null) yield break;
+        Vector3 start = go.transform.localScale;
+        Vector3 peak  = start * 1.30f;
+        float   t     = 0f;
+        while (t < 0.08f)
+        {
+            if (go == null) yield break;
+            go.transform.localScale = Vector3.LerpUnclamped(start, peak, Smooth(t / 0.08f));
+            t += Time.deltaTime;
+            yield return null;
+        }
+        if (go != null) Object.Destroy(go);
     }
 
     // ── Scale animations ──────────────────────────────────────────────────────
@@ -176,8 +202,7 @@ public sealed class CollisionFX : MonoBehaviour
         _sr.color = from;
     }
 
-    // Expanding tile-shaped ring that fades out — much more impactful than sparks alone.
-    // Copies the player's current sprite and scale, then expands to endScaleMult × size.
+    // Expanding tile-shaped ring that fades out.
     IEnumerator ShockwaveRoutine(float duration, float endScaleMult, Color color, float startAlpha)
     {
         if (_sr?.sprite == null) yield break;
@@ -211,7 +236,11 @@ public sealed class CollisionFX : MonoBehaviour
 
     static float Smooth(float t) => Mathf.SmoothStep(0f, 1f, t);
 
-    static void SpawnSparks(Vector3 pos, Color color, int count)
+    // ── Spark shapes ──────────────────────────────────────────────────────────
+
+    enum SparkShape { Circle, Directional, Ring, Explosion, Arc }
+
+    static void SpawnSparks(Vector3 pos, Color color, int count, SparkShape shape)
     {
         var go  = new GameObject("[Sparks]");
         go.transform.position = pos;
@@ -222,20 +251,65 @@ public sealed class CollisionFX : MonoBehaviour
 
         var main             = ps.main;
         main.loop            = false;
-        main.startLifetime   = new ParticleSystem.MinMaxCurve(0.30f, 0.65f);
-        main.startSpeed      = new ParticleSystem.MinMaxCurve(4f, 12f);
-        main.startSize       = new ParticleSystem.MinMaxCurve(0.08f, 0.26f);
-        main.startColor      = color;
-        main.gravityModifier = 0.20f;
         main.simulationSpace = ParticleSystemSimulationSpace.World;
+        main.startColor      = color;
+        main.gravityModifier = shape == SparkShape.Arc ? 0.45f : 0.20f;
 
         var emission = ps.emission;
         emission.rateOverTime = 0;
         emission.SetBursts(new[] { new ParticleSystem.Burst(0f, (short)count) });
 
-        var shape       = ps.shape;
-        shape.shapeType = ParticleSystemShapeType.Circle;
-        shape.radius    = 0.12f;
+        var shapeModule = ps.shape;
+
+        switch (shape)
+        {
+            case SparkShape.Directional:
+                // Small focused burst — eat feels like impact
+                main.startLifetime = new ParticleSystem.MinMaxCurve(0.20f, 0.45f);
+                main.startSpeed    = new ParticleSystem.MinMaxCurve(5f, 10f);
+                main.startSize     = new ParticleSystem.MinMaxCurve(0.06f, 0.18f);
+                shapeModule.shapeType = ParticleSystemShapeType.Circle;
+                shapeModule.radius    = 0.08f;
+                break;
+
+            case SparkShape.Ring:
+                // Wide ring burst — evolve feels expansive
+                main.startLifetime = new ParticleSystem.MinMaxCurve(0.35f, 0.70f);
+                main.startSpeed    = new ParticleSystem.MinMaxCurve(6f, 14f);
+                main.startSize     = new ParticleSystem.MinMaxCurve(0.08f, 0.22f);
+                shapeModule.shapeType = ParticleSystemShapeType.Circle;
+                shapeModule.radius    = 0.20f;
+                break;
+
+            case SparkShape.Explosion:
+                // Large radius, high speed — penalty feels punishing
+                main.startLifetime = new ParticleSystem.MinMaxCurve(0.30f, 0.65f);
+                main.startSpeed    = new ParticleSystem.MinMaxCurve(8f, 18f);
+                main.startSize     = new ParticleSystem.MinMaxCurve(0.10f, 0.30f);
+                main.gravityModifier = 0.30f;
+                shapeModule.shapeType = ParticleSystemShapeType.Circle;
+                shapeModule.radius    = 0.25f;
+                break;
+
+            case SparkShape.Arc:
+                // Upward arc shower — special tile collect feels like treasure
+                main.startLifetime = new ParticleSystem.MinMaxCurve(0.40f, 0.80f);
+                main.startSpeed    = new ParticleSystem.MinMaxCurve(4f, 10f);
+                main.startSize     = new ParticleSystem.MinMaxCurve(0.08f, 0.24f);
+                shapeModule.shapeType = ParticleSystemShapeType.Cone;
+                shapeModule.angle     = 50f;
+                shapeModule.radius    = 0.10f;
+                go.transform.rotation = Quaternion.Euler(-90f, 0f, 0f);
+                break;
+
+            default:
+                main.startLifetime = new ParticleSystem.MinMaxCurve(0.30f, 0.65f);
+                main.startSpeed    = new ParticleSystem.MinMaxCurve(4f, 12f);
+                main.startSize     = new ParticleSystem.MinMaxCurve(0.08f, 0.26f);
+                shapeModule.shapeType = ParticleSystemShapeType.Circle;
+                shapeModule.radius    = 0.12f;
+                break;
+        }
 
         Destroy(go, 1.5f);
     }
