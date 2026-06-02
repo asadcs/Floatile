@@ -100,6 +100,12 @@ public sealed class DevQAPanel : MonoBehaviour
             GUILayout.Label($"Occ: {arena.OccupancyRatio * 100f:F0}%  Temp: {arena.GlobalTemporalPressure:F1}");
             GUILayout.Label($"Density: {arena.GlobalDensity:F2}  Prestige: {arena.GlobalPrestige:F2}");
         }
+
+        // Live food/monster ratio
+        int f = 0, m = 0;
+        foreach (var npc in FindObjectsByType<NPCDrift>(FindObjectsInactive.Exclude, FindObjectsSortMode.None))
+        { if (npc.IsMonster) m++; else f++; }
+        GUILayout.Label($"Food:{f}  Monsters:{m}  Ratio:{(f + m > 0 ? m * 100 / (f + m) : 0)}%");
     }
 
     void SetHeroTier(long tier)
@@ -165,24 +171,21 @@ public sealed class DevQAPanel : MonoBehaviour
     static void AppendVisibleTierCounts(System.Text.StringBuilder sb, long heroTier)
     {
         var counts = new System.Collections.Generic.SortedDictionary<long, int>();
+        int food = 0, monsters = 0;
         foreach (var npc in FindObjectsByType<NPCDrift>(FindObjectsInactive.Exclude, FindObjectsSortMode.None))
         {
             long t = npc.Tier;
             counts[t] = counts.TryGetValue(t, out int c) ? c + 1 : 1;
+            if (npc.IsMonster) monsters++;
+            else food++;
         }
 
-        int food = 0, equal = 0, danger = 0, other = 0;
-        foreach (var kv in counts)
-        {
-            if (kv.Key < heroTier) food += kv.Value;
-            else if (kv.Key == heroTier) equal += kv.Value;
-            else if (kv.Key == heroTier * 2) danger += kv.Value;
-            else other += kv.Value;
-        }
+        int total = food + monsters;
+        float ratio = total > 0 ? (float)monsters / total : 0f;
 
         sb.AppendLine("────────────────────────────────────────");
-        sb.AppendLine($"VisibleCounts food<{TileVisual.FormatNumber(heroTier)}:{food}  " +
-                      $"equal:{equal}  danger:{danger}  other:{other}");
+        sb.AppendLine($"Food:{food}  Monsters:{monsters}  Total:{total}  " +
+                      $"MonsterRatio:{ratio * 100f:F0}%  (target 50%)");
         sb.Append("TierCounts ");
         foreach (var kv in counts)
             sb.Append($"{TileVisual.FormatNumber(kv.Key)}={kv.Value} ");
