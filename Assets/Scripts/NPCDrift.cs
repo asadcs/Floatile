@@ -9,7 +9,8 @@ public sealed class NPCDrift : MonoBehaviour
     [SerializeField] private long tier = 2;
 
     bool isMonster;
-    bool movesRightToLeft;
+    bool currentlyMovingLeft;
+    bool spawnedFromRight;     // immutable after SetDirection — determines which side destroys this tile
     Transform playerTransform;
 
     static readonly Color MONSTER_COLOR = new(0.102f, 0.102f, 0.102f, 1f);
@@ -29,7 +30,8 @@ public sealed class NPCDrift : MonoBehaviour
         }
     }
 
-    public bool IsMonster => isMonster;
+    public bool IsMonster   => isMonster;
+    public bool MovingLeft  => currentlyMovingLeft;
 
     public void SetMonster(bool monster)
     {
@@ -39,36 +41,40 @@ public sealed class NPCDrift : MonoBehaviour
         RefreshCollider();
     }
 
-    public void SetDirection(bool rightToLeft) => movesRightToLeft = rightToLeft;
+    public void SetDirection(bool rightToLeft)
+    {
+        currentlyMovingLeft = rightToLeft;
+        spawnedFromRight    = rightToLeft;
+    }
 
     Rigidbody2D rb;
-    TileVisual visual;
-    TileHitbox hitbox;
+    TileVisual  visual;
+    TileHitbox  hitbox;
     float baseSpeed;
     float wander;
     float verticalDrift;
     float driftTimer;
     int _arenaId = -1;
 
-    readonly Collider2D[] overlapBuffer = new Collider2D[20];
+    readonly Collider2D[] overlapBuffer = new Collider2D[24];
 
     void Awake()
     {
-        rb = GetComponent<Rigidbody2D>();
+        rb     = GetComponent<Rigidbody2D>();
         visual = GetComponent<TileVisual>();
         hitbox = GetComponent<TileHitbox>();
 
-        rb.bodyType = RigidbodyType2D.Kinematic;
-        rb.gravityScale = 0f;
-        rb.constraints = RigidbodyConstraints2D.FreezeRotation;
+        rb.bodyType               = RigidbodyType2D.Kinematic;
+        rb.gravityScale           = 0f;
+        rb.constraints            = RigidbodyConstraints2D.FreezeRotation;
         rb.useFullKinematicContacts = true;
 
         RefreshCollider();
 
         verticalDrift = Random.Range(-1f, 1f);
-        driftTimer = Random.Range(0.8f, 2.2f);
-        baseSpeed = TileProgression.NpcSpeed(tier);
-        wander = TileProgression.WanderScore(tier);
+        driftTimer    = Random.Range(0.8f, 2.2f);
+        baseSpeed     = TileProgression.NpcSpeed(tier);
+        wander        = TileProgression.WanderScore(tier);
         visual.SetTier(tier);
     }
 
@@ -83,47 +89,90 @@ public sealed class NPCDrift : MonoBehaviour
 
     void FixedUpdate()
     {
-        float xDir = movesRightToLeft ? -1f : 1f;
-
-        if (!movesRightToLeft && rb.position.x > ArenaState.MaxX + 2f) { Destroy(gameObject); return; }
-        if ( movesRightToLeft && rb.position.x < ArenaState.MinX - 2f) { Destroy(gameObject); return; }
-
+        // Random wander tick
         driftTimer -= Time.fixedDeltaTime;
         if (driftTimer <= 0f)
         {
             verticalDrift = Mathf.Lerp(verticalDrift, Random.Range(-1f, 1f), 0.75f);
-            driftTimer = Random.Range(0.8f, 2.4f);
+            driftTimer    = Random.Range(0.8f, 2.4f);
         }
 
+        // Head-on avoidance overrides wander when another NPC is approaching
+        ApplyHeadonAvoidance();
+
+        float xDir = currentlyMovingLeft ? -1f : 1f;
         Vector2 vel = new(baseSpeed * xDir, verticalDrift * wander * 0.55f);
 
+        // Player interaction: monster chases, food evades
         if (playerTransform != null)
         {
             long playerTier = playerTransform.GetComponent<PlayerProgression>()?.Tier ?? 2L;
             Vector2 toPlayer = (Vector2)playerTransform.position - rb.position;
-            float dist = toPlayer.magnitude;
+            float   dist     = toPlayer.magnitude;
 
             if (isMonster && tier > playerTier)
             {
                 vel += toPlayer.normalized * baseSpeed * 0.5f;
             }
-            else if (!isMonster && dist < TileProgression.FoodFleeDetectRange && driftTimer > 0.15f)
+            else if (!isMonster && dist < TileProgression.FoodFleeDetectRange)
             {
                 verticalDrift = rb.position.y > playerTransform.position.y ? 1f : -1f;
-                driftTimer = 0f;
+                driftTimer    = Random.Range(0.5f, 1.2f);
             }
         }
 
         Vector2 next = rb.position + vel * Time.fixedDeltaTime;
         next.y = Mathf.Clamp(next.y, ArenaState.MinY + HalfSize(), ArenaState.MaxY - HalfSize());
+
+        // Bounce at the opposite wall; vanish at the spawn-side wall
+        if (!spawnedFromRight)
+        {
+            // Spawned from left → bounce at right wall → vanish at left off-screen
+            if (next.x >= ArenaState.MaxX) { next.x = ArenaState.MaxX; currentlyMovingLeft = true; }
+            if (next.x < ArenaState.MinX - 2f) { Destroy(gameObject); return; }
+        }
+        else
+        {
+            // Spawned from right → bounce at left wall → vanish at right off-screen
+            if (next.x <= ArenaState.MinX) { next.x = ArenaState.MinX; currentlyMovingLeft = false; }
+            if (next.x > ArenaState.MaxX + 2f) { Destroy(gameObject); return; }
+        }
+
         next = ResolveAabbOverlaps(next);
         rb.MovePosition(next);
     }
 
-    void RefreshCollider()
+    // Steer vertically away from any NPC that is approaching head-on in the x-axis.
+    void ApplyHeadonAvoidance()
     {
-        hitbox?.Sync();
+        float avoidRange = HalfSize() * 2f + 2.0f;
+        float myXDir     = currentlyMovingLeft ? -1f : 1f;
+
+        int n = Physics2D.OverlapCircleNonAlloc(rb.position, avoidRange, overlapBuffer);
+        for (int i = 0; i < n; i++)
+        {
+            var other = overlapBuffer[i];
+            if (other == null || other.gameObject == gameObject) continue;
+            var otherNPC = other.GetComponent<NPCDrift>();
+            if (otherNPC == null) continue;
+
+            float theirXDir = otherNPC.MovingLeft ? -1f : 1f;
+            // Only react to head-on (moving in opposite x directions)
+            if (myXDir * theirXDir >= 0f) continue;
+
+            // Only react if the other tile is ahead of us in our travel direction
+            float toOtherX = other.transform.position.x - rb.position.x;
+            if (myXDir * toOtherX <= 0f) continue;
+
+            // Steer to the side that moves away from the other tile's y position
+            float toOtherY = other.transform.position.y - rb.position.y;
+            verticalDrift = toOtherY < 0f ? 1f : -1f;
+            driftTimer    = Random.Range(0.6f, 1.5f);
+            break;
+        }
     }
+
+    void RefreshCollider() => hitbox?.Sync();
 
     float HalfSize() => hitbox != null ? hitbox.Bounds.extents.y : TileProgression.PhysicalSize(tier) * 0.5f;
 
@@ -133,7 +182,7 @@ public sealed class NPCDrift : MonoBehaviour
         int n = Physics2D.OverlapBoxNonAlloc(pos, size + Vector2.one * 0.02f, 0f, overlapBuffer);
 
         Vector2 correction = Vector2.zero;
-        Bounds mine = new(pos, size);
+        Bounds  mine       = new(pos, size);
         for (int i = 0; i < n; i++)
         {
             var other = overlapBuffer[i];
