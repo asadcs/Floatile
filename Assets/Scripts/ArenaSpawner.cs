@@ -112,15 +112,24 @@ public sealed class ArenaSpawner : MonoBehaviour
 
     long PickFoodTier()
     {
+        if (playerProg != null) heroH = System.Math.Max(2L, playerProg.Tier);
+
+        // Only spawn food tiers the player can safely eat (tile <= player tier).
+        // This guarantees there is always something edible regardless of player level.
         float total = 0f;
-        foreach (var w in FOOD_WEIGHTS) total += w;
+        for (int i = 0; i < FOOD_TIERS.Length; i++)
+            if (FOOD_TIERS[i] <= heroH) total += FOOD_WEIGHTS[i];
+
+        if (total <= 0f) return 2L;
+
         float roll = Random.value * total, cum = 0f;
         for (int i = 0; i < FOOD_TIERS.Length; i++)
         {
+            if (FOOD_TIERS[i] > heroH) continue;
             cum += FOOD_WEIGHTS[i];
             if (roll <= cum) return FOOD_TIERS[i];
         }
-        return 32L;
+        return 2L;
     }
 
     long PickMonsterTier()
