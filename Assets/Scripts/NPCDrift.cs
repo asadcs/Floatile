@@ -2,168 +2,171 @@ using UnityEngine;
 
 [RequireComponent(typeof(Rigidbody2D))]
 [RequireComponent(typeof(TileVisual))]
+[RequireComponent(typeof(BoxCollider2D))]
+[RequireComponent(typeof(TileHitbox))]
 public sealed class NPCDrift : MonoBehaviour
 {
     [SerializeField] private long tier = 2;
+
+    bool isMonster;
+    bool movesRightToLeft;
+    Transform playerTransform;
+
+    static readonly Color MONSTER_COLOR = new(0.102f, 0.102f, 0.102f, 1f);
 
     public long Tier
     {
         get => tier;
         set
         {
-            tier      = value;
+            tier = System.Math.Max(2L, value);
             baseSpeed = TileProgression.NpcSpeed(tier);
-            wander    = TileProgression.WanderScore(tier);
-            visual?.SetTier(tier);
-            if (ArenaState.Instance != null) ArenaState.Instance.UpdateTier(_arenaId, tier);
+            wander = TileProgression.WanderScore(tier);
+            if (isMonster) visual?.SetTierForced(tier, MONSTER_COLOR);
+            else           visual?.SetTier(tier);
+            RefreshCollider();
+            ArenaState.Instance?.UpdateTier(_arenaId, tier);
         }
     }
 
-    Rigidbody2D      rb;
-    TileVisual       visual;
-    CircleCollider2D col;
-    Transform        playerTransform;
-    float            baseSpeed;
-    float            wander;
-    float            vertDir;
-    float            wanderTimer;
-    int              _arenaId = -1;
+    public bool IsMonster => isMonster;
 
-    readonly Collider2D[] _overlapBuffer = new Collider2D[20];
+    public void SetMonster(bool monster)
+    {
+        isMonster = monster;
+        if (monster) visual?.SetTierForced(tier, MONSTER_COLOR);
+        else         visual?.SetTier(tier);
+        RefreshCollider();
+    }
+
+    public void SetDirection(bool rightToLeft) => movesRightToLeft = rightToLeft;
+
+    Rigidbody2D rb;
+    TileVisual visual;
+    TileHitbox hitbox;
+    float baseSpeed;
+    float wander;
+    float verticalDrift;
+    float driftTimer;
+    int _arenaId = -1;
+
+    readonly Collider2D[] overlapBuffer = new Collider2D[20];
 
     void Awake()
     {
-        rb     = GetComponent<Rigidbody2D>();
+        rb = GetComponent<Rigidbody2D>();
         visual = GetComponent<TileVisual>();
-        col    = GetComponent<CircleCollider2D>();
+        hitbox = GetComponent<TileHitbox>();
 
-        rb.bodyType                 = RigidbodyType2D.Kinematic;
-        rb.gravityScale             = 0f;
-        rb.constraints              = RigidbodyConstraints2D.FreezeRotation;
+        rb.bodyType = RigidbodyType2D.Kinematic;
+        rb.gravityScale = 0f;
+        rb.constraints = RigidbodyConstraints2D.FreezeRotation;
         rb.useFullKinematicContacts = true;
 
-        vertDir     = Random.Range(-1f, 1f);
-        wanderTimer = Random.Range(1.5f, 4f);
+        RefreshCollider();
 
+        verticalDrift = Random.Range(-1f, 1f);
+        driftTimer = Random.Range(0.8f, 2.2f);
         baseSpeed = TileProgression.NpcSpeed(tier);
-        wander    = TileProgression.WanderScore(tier);
+        wander = TileProgression.WanderScore(tier);
         visual.SetTier(tier);
     }
 
     void Start()
     {
+        _arenaId = ArenaState.Instance != null ? ArenaState.Instance.Register(tier) : -1;
         var p = GameObject.FindWithTag("Player");
         if (p != null) playerTransform = p.transform;
-        if (ArenaState.Instance != null) _arenaId = ArenaState.Instance.Register(tier);
     }
 
     void OnDestroy() => ArenaState.Instance?.Unregister(_arenaId);
 
     void FixedUpdate()
     {
-        if (rb.position.x > ArenaState.MaxX)
+        float xDir = movesRightToLeft ? -1f : 1f;
+
+        if (!movesRightToLeft && rb.position.x > ArenaState.MaxX + 2f) { Destroy(gameObject); return; }
+        if ( movesRightToLeft && rb.position.x < ArenaState.MinX - 2f) { Destroy(gameObject); return; }
+
+        driftTimer -= Time.fixedDeltaTime;
+        if (driftTimer <= 0f)
         {
-            Destroy(gameObject);
-            return;
+            verticalDrift = Mathf.Lerp(verticalDrift, Random.Range(-1f, 1f), 0.75f);
+            driftTimer = Random.Range(0.8f, 2.4f);
         }
 
-        Vector2 vel = new(baseSpeed, vertDir * wander);
+        Vector2 vel = new(baseSpeed * xDir, verticalDrift * wander * 0.55f);
 
-        // Prey flees; predator chases. Determined by P-unit gap relative to player.
         if (playerTransform != null)
         {
-            var prog = playerTransform.GetComponent<PlayerProgression>();
-            if (prog != null && tier < prog.Tier)
+            long playerTier = playerTransform.GetComponent<PlayerProgression>()?.Tier ?? 2L;
+            Vector2 toPlayer = (Vector2)playerTransform.position - rb.position;
+            float dist = toPlayer.magnitude;
+
+            if (isMonster && tier > playerTier)
             {
-                // Flee: this NPC is smaller than the player — run away within avoidance range.
-                float dist       = Vector2.Distance(rb.position, (Vector2)playerTransform.position);
-                float avoidRange = Mathf.Max(TileProgression.InfluenceRadius(tier), TileProgression.AvoidanceMinRadius);
-                if (dist < avoidRange)
-                {
-                    Vector2 away = (rb.position - (Vector2)playerTransform.position).normalized;
-                    vel += away * baseSpeed * 0.8f;
-                }
+                vel += toPlayer.normalized * baseSpeed * 0.5f;
             }
-            else if (prog != null &&
-                     TileProgression.P(tier) >= TileProgression.P(prog.Tier) + TileProgression.PredatorMinDeltaP)
+            else if (!isMonster && dist < TileProgression.FoodFleeDetectRange && driftTimer > 0.15f)
             {
-                // Chase: this NPC is >= PredatorMinDeltaP P-units bigger — drift toward player.
-                float dist       = Vector2.Distance(rb.position, (Vector2)playerTransform.position);
-                float chaseRange = TileProgression.InfluenceRadius(tier) * TileProgression.ChaseDetectFactor;
-                if (dist < chaseRange)
-                {
-                    Vector2 toward = ((Vector2)playerTransform.position - rb.position).normalized;
-                    vel += toward * baseSpeed * TileProgression.ChaseSpeedFactor;
-                }
+                verticalDrift = rb.position.y > playerTransform.position.y ? 1f : -1f;
+                driftTimer = 0f;
             }
         }
 
         Vector2 next = rb.position + vel * Time.fixedDeltaTime;
-
-        // Vertical wall bounce
-        if (next.y < ArenaState.MinY || next.y > ArenaState.MaxY)
-        {
-            vertDir = -vertDir;
-            vel.y   = -vel.y;
-            next.y  = Mathf.Clamp(next.y, ArenaState.MinY, ArenaState.MaxY);
-        }
-
-        // Hard positional separation — overrides all velocity-based movement.
-        next = ResolveOverlaps(next);
-
+        next.y = Mathf.Clamp(next.y, ArenaState.MinY + HalfSize(), ArenaState.MaxY - HalfSize());
+        next = ResolveAabbOverlaps(next);
         rb.MovePosition(next);
-
-        wanderTimer -= Time.fixedDeltaTime;
-        if (wanderTimer <= 0f)
-        {
-            vertDir     = Random.Range(-1f, 1f);
-            wanderTimer = Random.Range(1.5f, 4f);
-        }
     }
 
-    // Push `pos` out of any overlapping tile colliders. Runs after velocity so it
-    // acts as a hard constraint — tiles can never end a frame inside each other.
-    // Parallel correction: accumulate ALL push vectors before applying so 3+ tile
-    // clusters resolve correctly (sequential would corrupt later iterations).
-    Vector2 ResolveOverlaps(Vector2 pos)
+    void RefreshCollider()
     {
-        float myR = col != null
-            ? col.radius * transform.lossyScale.x
-            : TileProgression.PhysicalSize(tier) * 0.5f;
+        hitbox?.Sync();
+    }
 
-        float queryR = myR + TileProgression.SizeMax + 0.2f;
-        int   n      = Physics2D.OverlapCircleNonAlloc(pos, queryR, _overlapBuffer);
+    float HalfSize() => hitbox != null ? hitbox.Bounds.extents.y : TileProgression.PhysicalSize(tier) * 0.5f;
+
+    Vector2 ResolveAabbOverlaps(Vector2 pos)
+    {
+        Vector2 size = hitbox != null ? hitbox.Bounds.size : Vector2.one * TileProgression.PhysicalSize(tier);
+        int n = Physics2D.OverlapBoxNonAlloc(pos, size + Vector2.one * 0.02f, 0f, overlapBuffer);
 
         Vector2 correction = Vector2.zero;
+        Bounds mine = new(pos, size);
         for (int i = 0; i < n; i++)
         {
-            var other = _overlapBuffer[i];
+            var other = overlapBuffer[i];
             if (other == null || other.gameObject == gameObject) continue;
-            bool isNPC    = other.GetComponent<NPCDrift>() != null;
-            bool isPlayer = other.GetComponent<PlayerProgression>() != null;
-            if (!isNPC && !isPlayer) continue;
+            if (other.GetComponent<NPCDrift>() == null) continue;
 
-            var   otherCircle = other as CircleCollider2D;
-            float otherR      = otherCircle != null
-                ? otherCircle.radius * other.transform.lossyScale.x
-                : TileProgression.PhysicalSize(tier) * 0.5f;
+            var otherHitbox = other.GetComponent<TileHitbox>();
+            if (otherHitbox == null) continue;
+            Bounds theirs = otherHitbox.Bounds;
+            if (!TileHitbox.Touches(mine, theirs)) continue;
 
-            Vector2 delta   = pos - (Vector2)other.transform.position;
-            float   minDist = myR + otherR;
-            float   dist    = delta.magnitude;
-
-            if (dist < minDist)
+            float pushX = Mathf.Min(mine.max.x - theirs.min.x, theirs.max.x - mine.min.x);
+            float pushY = Mathf.Min(mine.max.y - theirs.min.y, theirs.max.y - mine.min.y);
+            if (pushX < pushY)
             {
-                Vector2 dir = dist > 0.001f ? delta / dist : RandomDir();
-                correction += dir * (minDist - dist);
+                float dir = mine.center.x < theirs.center.x ? -1f : 1f;
+                correction.x += dir * pushX;
+            }
+            else
+            {
+                float dir = mine.center.y < theirs.center.y ? -1f : 1f;
+                correction.y += dir * pushY;
             }
         }
-        return pos + correction;
+        return pos + correction * 0.55f;
     }
 
-    static Vector2 RandomDir()
+    void OnDrawGizmos()
     {
-        float a = Random.Range(0f, Mathf.PI * 2f);
-        return new Vector2(Mathf.Cos(a), Mathf.Sin(a));
+        if (!TileProgression.DebugHitboxes) return;
+        var b = GetComponent<BoxCollider2D>();
+        if (b == null) return;
+        Gizmos.color = isMonster ? Color.red : Color.yellow;
+        Gizmos.DrawWireCube(b.bounds.center, b.bounds.size);
     }
 }

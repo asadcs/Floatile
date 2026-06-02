@@ -15,6 +15,9 @@ public sealed class DevQAPanel : MonoBehaviour
     static readonly (string label, long tier)[][] TIER_ROWS =
     {
         new[] { ("2",    2L),    ("4",    4L),    ("8",    8L)    },
+        new[] { ("16",   16L),   ("64",   64L),   ("128",  128L)  },
+        new[] { ("256",  256L),  ("512",  512L),  ("1K",   1024L) },
+        new[] { ("2K",   2048L), ("4K",   4096L), ("8K",   8192L) },
         new[] { ("1M",   1_000_000L),      ("500M", 500_000_000L),      ("999M", 999_000_000L)      },
         new[] { ("1B",   1_000_000_000L),  ("500B", 500_000_000_000L),  ("999B", 999_000_000_000L)  },
         new[] { ("1T",   1_000_000_000_000L), ("500T", 500_000_000_000_000L), ("999T", 999_000_000_000_000L) },
@@ -69,11 +72,8 @@ public sealed class DevQAPanel : MonoBehaviour
         if (GUILayout.Button("Clear Arena")) _spawner?.ClearAllNPCs();
 
         GUILayout.Space(4);
-        GUILayout.Label("── SPECIAL TILES ──");
-        GUILayout.BeginHorizontal();
-        if (GUILayout.Button("Force Gold"))  _spawner?.ForceSpawnWhite();
-        if (GUILayout.Button("Force Hell"))  _spawner?.ForceSpawnBlack();
-        GUILayout.EndHorizontal();
+        GUILayout.Label("── MONSTERS ──");
+        if (GUILayout.Button("Force Monster")) _spawner?.ForceSpawnMonster();
 
         GUILayout.Space(4);
         GUILayout.Label("── REPORTS  [F2/F3] ──");
@@ -82,6 +82,7 @@ public sealed class DevQAPanel : MonoBehaviour
         if (GUILayout.Button("Scores"))  LogScores();
         GUILayout.EndHorizontal();
         if (GUILayout.Button("Run QA Scenario")) RunQAScenario();
+        TileProgression.DebugHitboxes = GUILayout.Toggle(TileProgression.DebugHitboxes, "Debug Hitboxes");
 
         GUILayout.EndArea();
     }
@@ -156,8 +157,36 @@ public sealed class DevQAPanel : MonoBehaviour
                           $"TemporalP={arena.GlobalTemporalPressure:F2}  " +
                           $"Prestige={arena.GlobalPrestige:F2}");
         }
+        AppendVisibleTierCounts(sb, tier);
         sb.AppendLine("════════════════════════════════════════");
         Debug.Log(sb.ToString());
+    }
+
+    static void AppendVisibleTierCounts(System.Text.StringBuilder sb, long heroTier)
+    {
+        var counts = new System.Collections.Generic.SortedDictionary<long, int>();
+        foreach (var npc in FindObjectsByType<NPCDrift>(FindObjectsInactive.Exclude, FindObjectsSortMode.None))
+        {
+            long t = npc.Tier;
+            counts[t] = counts.TryGetValue(t, out int c) ? c + 1 : 1;
+        }
+
+        int food = 0, equal = 0, danger = 0, other = 0;
+        foreach (var kv in counts)
+        {
+            if (kv.Key < heroTier) food += kv.Value;
+            else if (kv.Key == heroTier) equal += kv.Value;
+            else if (kv.Key == heroTier * 2) danger += kv.Value;
+            else other += kv.Value;
+        }
+
+        sb.AppendLine("────────────────────────────────────────");
+        sb.AppendLine($"VisibleCounts food<{TileVisual.FormatNumber(heroTier)}:{food}  " +
+                      $"equal:{equal}  danger:{danger}  other:{other}");
+        sb.Append("TierCounts ");
+        foreach (var kv in counts)
+            sb.Append($"{TileVisual.FormatNumber(kv.Key)}={kv.Value} ");
+        sb.AppendLine();
     }
 }
 

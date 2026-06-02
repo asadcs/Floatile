@@ -154,6 +154,19 @@ public sealed class TileVisual : MonoBehaviour
         transform.localScale = Vector3.one * TierScale(tier);
     }
 
+    // Same as SetTier but uses forcedColor instead of TierColorTable.
+    // Pass black (0.102, 0.102, 0.102) for monster tiles — luminance auto-gives white label.
+    public void SetTierForced(long tier, Color forcedColor)
+    {
+        tierLabel = FormatNumber(tier);
+        tileColor = forcedColor;
+        if (spriteRenderer == null) spriteRenderer = GetComponent<SpriteRenderer>();
+        EnsureLabels();
+        ConfigureSprite();
+        ConfigureLabels();
+        transform.localScale = Vector3.one * TierScale(tier);
+    }
+
     // ── Number formatting ─────────────────────────────────────────────────────
 
     public static string FormatNumber(long value)

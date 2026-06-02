@@ -3,9 +3,14 @@ using UnityEngine;
 public static class TileProgression
 {
     // ── Tuning (all public static — override from a config component if needed) ─
-    // Collision circle = min(sprite width, sprite height) * ColliderRadiusFraction.
-    // The tile art has horizontal padding/shadow, so using width makes hits fire too early.
+    // Hitboxes are synced from the rendered sprite bounds by TileHitbox.
+    // 0.96 gives a tiny arcade forgiveness margin without visible clipping.
+    public static float HitboxVisualFraction = 0.96f;
+
+    // Legacy circle/box helpers kept for old setup paths; live gameplay uses TileHitbox.
     public static float ColliderRadiusFraction = 0.50f;
+    public static float ColliderBoxFraction = 0.96f;
+    public static bool  DebugHitboxes = false;
 
     public static float CollisionRadius(Sprite sprite)
     {
@@ -13,6 +18,8 @@ public static class TileProgression
         float bodyDim = Mathf.Min(sprite.bounds.size.x, sprite.bounds.size.y);
         return bodyDim * ColliderRadiusFraction;
     }
+
+    public static float CollisionBoxSize() => ColliderBoxFraction;
 
     public static float SizeMin             = 0.20f;
     public static float SizeMax             = 1.50f;
@@ -65,6 +72,13 @@ public static class TileProgression
     public static float WhiteTileFleeSpeed     = 3.5f;  // white tile escape speed (u/s) — fast and elusive
     public static float WhiteTileFleeStrength  = 4.0f;  // turn rate away from player (rad/s approx)
     public static float WhiteTileDetectRange   = 8.0f;  // radius within which white tile notices player
+
+    // ── Food + Monster system ─────────────────────────────────────────────────
+    public static long  FoodTierMax           = 32L;   // food never spawns above tier 32
+    public static float MonsterScaleInitial   = 4f;    // monsters start at 4× player tier
+    public static float MonsterScaleMin       = 1.5f;  // closest monsters get to player tier
+    public static float MonsterEscalationTime = 300f;  // seconds to reach MonsterScaleMin (5 min)
+    public static float FoodFleeDetectRange   = 6f;    // radius within which food notices player
 
     // ── Spawn system ──────────────────────────────────────────────────────────
     public static long  EarlyGameMaxH           = 32L;    // H ≤ this → early stage weights
