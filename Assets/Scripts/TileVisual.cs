@@ -155,10 +155,10 @@ public sealed class TileVisual : MonoBehaviour
     }
 
     // Same as SetTier but uses forcedColor instead of TierColorTable.
-    // Pass black (0.102, 0.102, 0.102) for monster tiles — luminance auto-gives white label.
-    public void SetTierForced(long tier, Color forcedColor)
+    // forcedLabel overrides the number; pass "00" for monster tiles.
+    public void SetTierForced(long tier, Color forcedColor, string forcedLabel = null)
     {
-        tierLabel = FormatNumber(tier);
+        tierLabel = forcedLabel ?? FormatNumber(tier);
         tileColor = forcedColor;
         if (spriteRenderer == null) spriteRenderer = GetComponent<SpriteRenderer>();
         EnsureLabels();

@@ -23,7 +23,7 @@ public sealed class NPCDrift : MonoBehaviour
             tier = System.Math.Max(2L, value);
             baseSpeed = TileProgression.NpcSpeed(tier);
             wander = TileProgression.WanderScore(tier);
-            if (isMonster) visual?.SetTierForced(tier, MONSTER_COLOR);
+            if (isMonster) visual?.SetTierForced(tier, MONSTER_COLOR, "00");
             else           visual?.SetTier(tier);
             RefreshCollider();
             ArenaState.Instance?.UpdateTier(_arenaId, tier);
@@ -36,7 +36,7 @@ public sealed class NPCDrift : MonoBehaviour
     public void SetMonster(bool monster)
     {
         isMonster = monster;
-        if (monster) visual?.SetTierForced(tier, MONSTER_COLOR);
+        if (monster) visual?.SetTierForced(tier, MONSTER_COLOR, "00");
         else         visual?.SetTier(tier);
         RefreshCollider();
     }
