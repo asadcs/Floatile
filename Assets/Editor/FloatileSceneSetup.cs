@@ -29,6 +29,10 @@ public static class FloatileSceneSetup
     [MenuItem("Floatile/Setup Sprint 2 Scene (Full Reset)")]
     public static void SetupSprint2() => SetupSprint1();
 
+    public static void RunAutomatedQA() => FloatileAutoQAEditor.Run();
+
+    public static void RunStaticQA() => FloatileStaticQAEditor.Run();
+
     [MenuItem("Floatile/Setup Sprint 1 Scene (Full Reset)")]
     public static void SetupSprint1()
     {
@@ -42,7 +46,6 @@ public static class FloatileSceneSetup
         ClearSprint1Objects();
         CreateBackground(bgSprite);
         SetupBloom();
-        CreateMusic();
         CreateWalls();
         CreateGameManager();
         CreateArenaState();
@@ -108,9 +111,11 @@ public static class FloatileSceneSetup
         rb.constraints              = RigidbodyConstraints2D.FreezeRotation;
         rb.useFullKinematicContacts = true;
 
-        var col       = p.AddComponent<CircleCollider2D>();
-        col.radius    = sprite != null ? sprite.bounds.size.x * TileProgression.ColliderRadiusFraction : 0.4f;
+        var col       = p.AddComponent<BoxCollider2D>();
+        col.size      = Vector2.one * TileProgression.CollisionBoxSize();
+        col.offset    = Vector2.zero;
         col.isTrigger = true;
+        p.AddComponent<TileHitbox>();
 
         var tv = p.AddComponent<TileVisual>();
         SetTileVisual(tv, sprite, TierColorTable.ForTier(2), "2");
@@ -145,9 +150,11 @@ public static class FloatileSceneSetup
         rb.constraints              = RigidbodyConstraints2D.FreezeRotation;
         rb.useFullKinematicContacts = true;
 
-        var col       = npc.AddComponent<CircleCollider2D>();
-        col.radius    = sprite != null ? sprite.bounds.size.x * TileProgression.ColliderRadiusFraction : 0.4f;
-        col.isTrigger = false;
+        var col       = npc.AddComponent<BoxCollider2D>();
+        col.size      = Vector2.one * TileProgression.CollisionBoxSize();
+        col.offset    = Vector2.zero;
+        col.isTrigger = true;
+        npc.AddComponent<TileHitbox>();
 
         npc.AddComponent<TileVisual>();
         npc.AddComponent<NPCDrift>();
@@ -171,9 +178,11 @@ public static class FloatileSceneSetup
         sr.sortingOrder = 2;
 
         st.AddComponent<Rigidbody2D>();
-        var col       = st.AddComponent<CircleCollider2D>();
-        col.radius    = sprite != null ? sprite.bounds.size.x * TileProgression.ColliderRadiusFraction : 0.4f;
+        var col       = st.AddComponent<BoxCollider2D>();
+        col.size      = Vector2.one * TileProgression.CollisionBoxSize();
+        col.offset    = Vector2.zero;
         col.isTrigger = true;
+        st.AddComponent<TileHitbox>();
 
         st.AddComponent<TileVisual>();
         st.AddComponent<SpecialTile>();
@@ -232,7 +241,6 @@ public static class FloatileSceneSetup
         ClearOldSceneObjects();
         CreateBackground(bgSprite);
         SetupBloom();
-        CreateMusic();
         CreateWalls();
         GameObject player = CreatePlayer(tileSprite);
         GameObject npcPrefab = CreateNpcPrefab(tileSprite);
@@ -318,24 +326,6 @@ public static class FloatileSceneSetup
                 Debug.Log($"[Setup] No existing '{n}' found — skipping.");
             }
         }
-    }
-
-    // ── Music ─────────────────────────────────────────────────────────────────
-
-    static void CreateMusic()
-    {
-        AudioClip clip = AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Audio/bg_music.mp3");
-
-        GameObject go = new("MusicManager");
-        var mm = go.AddComponent<MusicManager>();
-
-        SerializedObject so = new(mm);
-        so.FindProperty("bgMusic").objectReferenceValue = clip;
-        so.FindProperty("volume").floatValue = 0.35f;
-        so.ApplyModifiedPropertiesWithoutUndo();
-
-        EditorUtility.SetDirty(go);
-        Debug.Log(clip != null ? "Music wired: bg_music.mp3" : "WARNING: bg_music.mp3 not found in Assets/Audio/");
     }
 
     // ── Background ────────────────────────────────────────────────────────────

@@ -1,5 +1,7 @@
 using UnityEngine;
 
+[RequireComponent(typeof(BoxCollider2D))]
+[RequireComponent(typeof(TileHitbox))]
 public sealed class PlayerDrift : MonoBehaviour
 {
     // Set by UIManager D-pad buttons; accumulated while buttons are held
@@ -22,11 +24,12 @@ public sealed class PlayerDrift : MonoBehaviour
         rb.gravityScale = 0f;
         rb.constraints = RigidbodyConstraints2D.FreezeRotation;
 
-        // Trigger so OnTriggerEnter2D fires for eat/evolve/penalty
-        var col = GetComponent<BoxCollider2D>();
-        if (col != null) col.isTrigger = true;
+        // Trigger so OnTriggerEnter2D fires for eat/evolve/penalty.
+        var hitbox = GetComponent<TileHitbox>();
+        if (hitbox == null) hitbox = gameObject.AddComponent<TileHitbox>();
+        hitbox.Sync();
 
-        Debug.Log($"[PlayerDrift.Awake] kinematic RB ready. isTrigger={col?.isTrigger}");
+        Debug.Log($"[PlayerDrift.Awake] kinematic RB ready. isTrigger={hitbox.Collider?.isTrigger}");
     }
 
     private void Start()

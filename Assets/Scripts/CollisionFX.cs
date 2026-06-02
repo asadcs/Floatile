@@ -28,6 +28,7 @@ public sealed class CollisionFX : MonoBehaviour
 
     void OnDisable()
     {
+        Time.timeScale = 1f;
         _eat.OnEat            -= HandleEat;
         _eat.OnEvolve         -= HandleEvolve;
         _eat.OnPenalty        -= HandlePenalty;

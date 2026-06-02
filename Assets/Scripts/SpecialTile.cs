@@ -2,6 +2,8 @@ using UnityEngine;
 using System;
 
 [RequireComponent(typeof(Rigidbody2D))]
+[RequireComponent(typeof(BoxCollider2D))]
+[RequireComponent(typeof(TileHitbox))]
 public sealed class SpecialTile : MonoBehaviour
 {
     public enum OperatorType
@@ -66,10 +68,7 @@ public sealed class SpecialTile : MonoBehaviour
         }
         transform.localScale = Vector3.one * baseScale;
 
-        // Collider radius = solid tile core (excludes glow border); localScale handles world sizing.
-        var col2 = GetComponent<CircleCollider2D>();
-        if (col2 != null)
-            col2.radius = tileSprite != null ? tileSprite.bounds.size.x * TileProgression.ColliderRadiusFraction : 0.4f;
+        GetComponent<TileHitbox>()?.Sync();
 
         Destroy(gameObject, k == TileKind.Black ? TileProgression.BlackTileLifespan : TileProgression.WhiteTileLifespan);
     }
@@ -82,9 +81,9 @@ public sealed class SpecialTile : MonoBehaviour
         rb.gravityScale = 0f;
         rb.constraints = RigidbodyConstraints2D.FreezeRotation;
 
-        var col = GetComponent<BoxCollider2D>();
-        if (col == null) col = gameObject.AddComponent<BoxCollider2D>();
-        col.isTrigger = true;
+        var hitbox = GetComponent<TileHitbox>();
+        if (hitbox == null) hitbox = gameObject.AddComponent<TileHitbox>();
+        hitbox.Sync();
 
         dir = UnityEngine.Random.insideUnitCircle.normalized;
         if (dir.sqrMagnitude < 0.01f) dir = Vector2.right;
@@ -148,5 +147,14 @@ public sealed class SpecialTile : MonoBehaviour
         if (n % 3 == 0) return OperatorType.CubeRoot;
         if (n % 2 == 0) return OperatorType.SquareRoot;
         return OperatorType.DivideBy2;
+    }
+
+    void OnDrawGizmos()
+    {
+        if (!TileProgression.DebugHitboxes) return;
+        var b = GetComponent<BoxCollider2D>();
+        if (b == null) return;
+        Gizmos.color = kind == TileKind.White ? Color.yellow : Color.red;
+        Gizmos.DrawWireCube(b.bounds.center, b.bounds.size);
     }
 }
